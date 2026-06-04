@@ -21,6 +21,10 @@ static Layer* s_map_layer;
 static GBitmap* s_bitmap;
 static uint8_t s_bitmap_data[MAX_BITMAP_DATA_SIZE];
 static int s_chunks_received = 0;
+static int s_decompressed_offset = 0;
+static int s_rle_state = 0;
+static int s_rle_run_count = 0;
+static uint8_t s_rle_run_val = 0;
 
 static int s_bitmap_width = SCREEN_W;
 static int s_bitmap_height = SCREEN_H;
@@ -95,6 +99,57 @@ static void init_default_palette(void)
     }
 }
 
+static int rle_decode_chunk(const uint8_t* in, int in_len, uint8_t* out, int out_max)
+{
+    int ip = 0, op = 0;
+
+    while (s_rle_run_count > 0 && op < out_max)
+    {
+        out[op++] = s_rle_run_val;
+        s_rle_run_count--;
+    }
+
+    if (s_rle_state == 1 && ip < in_len)
+    {
+        s_rle_run_count = in[ip++] + 1;
+        s_rle_state = 2;
+    }
+    if (s_rle_state == 2 && ip < in_len)
+    {
+        s_rle_run_val = in[ip++];
+        int n = s_rle_run_count;
+        if (op + n > out_max) n = out_max - op;
+        memset(out + op, s_rle_run_val, n);
+        op += n;
+        s_rle_run_count -= n;
+        if (s_rle_run_count > 0) return op;
+        s_rle_state = 0;
+    }
+
+    while (ip < in_len && op < out_max)
+    {
+        uint8_t b = in[ip++];
+        if (b < 64)
+        {
+            out[op++] = b;
+        }
+        else if (b == 64)
+        {
+            if (ip >= in_len) { s_rle_state = 1; break; }
+            int count = in[ip++] + 1;
+            if (ip >= in_len) { s_rle_run_count = count; s_rle_state = 2; break; }
+            s_rle_run_val = in[ip++];
+            int n = count;
+            if (op + n > out_max) n = out_max - op;
+            memset(out + op, s_rle_run_val, n);
+            op += n;
+            s_rle_run_count = count - n;
+            if (s_rle_run_count > 0) break;
+        }
+    }
+    return op;
+}
+
 void navigation_init(void)
 {
     init_default_palette();
@@ -140,6 +195,9 @@ void navigation_destroy_map_layer(void)
 void navigation_cancel_transfer(void)
 {
     s_chunks_received = 0;
+    s_decompressed_offset = 0;
+    s_rle_state = 0;
+    s_rle_run_count = 0;
     s_transfer_active = false;
 #ifdef DEBUG_PNG
     APP_LOG(APP_LOG_LEVEL_INFO, "Transfer cancelled");
@@ -157,6 +215,9 @@ bool navigation_handle_message(DictionaryIterator* iter)
     {
         s_transfer_active = true;
         s_chunks_received = 0;
+        s_decompressed_offset = 0;
+        s_rle_state = 0;
+        s_rle_run_count = 0;
         if (palette->length == 128)
         {
             s_palette_received = 1;
@@ -179,6 +240,9 @@ bool navigation_handle_message(DictionaryIterator* iter)
         {
             s_transfer_active = true;
             s_chunks_received = 0;
+            s_decompressed_offset = 0;
+            s_rle_state = 0;
+            s_rle_run_count = 0;
 #ifdef DEBUG_PNG
             APP_LOG(APP_LOG_LEVEL_INFO, "Bitmap transfer starting, total=%lu", total->value->uint32);
 #endif
@@ -188,8 +252,10 @@ bool navigation_handle_message(DictionaryIterator* iter)
         APP_LOG(APP_LOG_LEVEL_INFO, "Chunk %d/%lu (%d bytes)", chunk_index, total->value->uint32, data->length);
 #endif
 
-        memcpy(&s_bitmap_data[chunk_index * s_chunk_size],
-               data->value->data, data->length);
+        int decoded = rle_decode_chunk(data->value->data, data->length,
+                                        &s_bitmap_data[s_decompressed_offset],
+                                        s_bitmap_data_size - s_decompressed_offset);
+        s_decompressed_offset += decoded;
         s_chunks_received++;
 
         if (s_chunks_received >= (int)total->value->uint32)

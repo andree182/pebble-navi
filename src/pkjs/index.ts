@@ -40,11 +40,32 @@ function saveDestinations(): void {
   } catch (e) {}
 }
 
+function rleEncode(data: Uint8Array): Uint8Array {
+  const out: number[] = [];
+  let i = 0;
+  while (i < data.length) {
+    const val = data[i];
+    let runLen = 1;
+    while (i + runLen < data.length && data[i + runLen] === val && runLen < 256) {
+      runLen++;
+    }
+    if (runLen >= 2) {
+      out.push(64, runLen - 1, val);
+      i += runLen;
+    } else {
+      out.push(val);
+      i++;
+    }
+  }
+  return new Uint8Array(out);
+}
+
 function sendBitmapToWatch(pixels: Uint8Array, onDone?: () => void): void {
   const gen = ++sendGeneration;
-  const totalChunks = Math.ceil(pixels.length / CHUNK_SIZE);
+  const compressed = rleEncode(pixels);
+  const totalChunks = Math.ceil(compressed.length / CHUNK_SIZE);
   if (DEBUG_PNG)
-    console.log('sendBitmapToWatch: gen=' + gen + ' pixels=' + pixels.length + ' bytes, chunks=' + totalChunks);
+    console.log('sendBitmapToWatch: gen=' + gen + ' pixels=' + pixels.length + ' bytes, compressed=' + compressed.length + ', chunks=' + totalChunks);
 
   sendChunk(0);
 
@@ -59,10 +80,10 @@ function sendBitmapToWatch(pixels: Uint8Array, onDone?: () => void): void {
       return;
     }
     const start = index * CHUNK_SIZE;
-    const end = Math.min(start + CHUNK_SIZE, pixels.length);
+    const end = Math.min(start + CHUNK_SIZE, compressed.length);
     const bytes: number[] = [];
     for (let i = start; i < end; i++) {
-      bytes.push(pixels[i]);
+      bytes.push(compressed[i]);
     }
 
     if (DEBUG_PNG)
