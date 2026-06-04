@@ -23,6 +23,7 @@ interface Pipeline {
 let pipeline: Pipeline | null = null;
 let destinations: Destination[] = [];
 let rendering = false;
+let sendGeneration = 0;
 
 function loadDestinations(): void {
   try {
@@ -40,9 +41,10 @@ function saveDestinations(): void {
 }
 
 function sendBitmapToWatch(pixelsBase64: string, paletteBase64: string, onDone?: () => void): void {
+  const gen = ++sendGeneration;
   if (DEBUG_PNG)
     console.log(
-      'sendBitmapToWatch: pixels len=' +
+      'sendBitmapToWatch: gen=' + gen + ' pixels len=' +
         pixelsBase64.length +
         ' palette len=' +
         paletteBase64.length,
@@ -73,6 +75,10 @@ function sendBitmapToWatch(pixelsBase64: string, paletteBase64: string, onDone?:
   Pebble.sendAppMessage(
     { IMAGE_PALETTE: paletteArr },
     function () {
+      if (gen !== sendGeneration) {
+        if (DEBUG_PNG) console.log('Palette send cancelled (gen ' + gen + ')');
+        return;
+      }
       if (DEBUG_PNG) console.log('Palette sent ok');
       sendChunk(0);
     },
@@ -83,6 +89,10 @@ function sendBitmapToWatch(pixelsBase64: string, paletteBase64: string, onDone?:
   );
 
   function sendChunk(index: number): void {
+    if (gen !== sendGeneration) {
+      if (DEBUG_PNG) console.log('Chunk send cancelled at index ' + index + ' (gen ' + gen + ')');
+      return;
+    }
     if (index >= totalChunks) {
       if (DEBUG_PNG) console.log('All ' + totalChunks + ' chunks sent');
 
@@ -107,6 +117,10 @@ function sendBitmapToWatch(pixelsBase64: string, paletteBase64: string, onDone?:
     Pebble.sendAppMessage(
       dict,
       function () {
+        if (gen !== sendGeneration) {
+          if (DEBUG_PNG) console.log('Chunk ' + index + ' ack cancelled (gen ' + gen + ')');
+          return;
+        }
         if (DEBUG_PNG) console.log('Chunk ' + index + ' acked');
         sendChunk(index + 1);
       },
@@ -117,7 +131,6 @@ function sendBitmapToWatch(pixelsBase64: string, paletteBase64: string, onDone?:
     );
   }
 }
-
 function sendRouteToWatch(output: RenderOutput): void {
   if (!output.route) return;
   const ns = output.nextStep;
@@ -205,9 +218,9 @@ Pebble.addEventListener('ready', function () {
   console.log('PebbleKit JS ready!');
   loadDestinations();
 
-  var info = Pebble.getActiveWatchInfo();
-  var w = 144;
-  var h = 168;
+  const info = Pebble.getActiveWatchInfo();
+  let w = 144;
+  let h = 168;
   if (info.platform === 'emery') {
     w = 200;
     h = 228;
@@ -253,6 +266,8 @@ Pebble.addEventListener('appmessage', function (e) {
   const payload = e.payload as any;
   if (payload.ZOOM_DIR != null) {
     if (!pipeline) return;
+    sendGeneration++;
+    rendering = false;
     const dir = payload.ZOOM_DIR;
     const state = pipeline.getState();
     let newZoom = dir === 1 ? state.zoom + 1 : state.zoom - 1;

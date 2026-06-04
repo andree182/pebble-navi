@@ -5,3 +5,4 @@
 Layer* navigation_create_map_layer(GRect bounds);
 void navigation_destroy_map_layer(void);
 bool navigation_handle_message(DictionaryIterator* iter);
+void navigation_cancel_transfer(void);

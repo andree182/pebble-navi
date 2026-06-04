@@ -27,6 +27,7 @@ static int s_bitmap_height = SCREEN_H;
 static int s_bitmap_data_size = SCREEN_W * SCREEN_H;
 static uint16_t s_palette_rgb565[64];
 static int s_palette_received = 0;
+static bool s_transfer_active = false;
 
 static void apply_palette(GBitmap* bmp)
 {
@@ -66,6 +67,18 @@ static void map_update_proc(Layer* layer, GContext* ctx)
     {
         graphics_draw_bitmap_in_rect(ctx, s_bitmap, layer_get_bounds(layer));
     }
+
+    GRect bounds = layer_get_bounds(layer);
+    int icon_size = 22;
+    int margin = 4;
+
+    GRect plus_rect = GRect(bounds.size.w - icon_size - margin, margin, icon_size, icon_size);
+    graphics_context_set_text_color(ctx, GColorBlack);
+    graphics_draw_text(ctx, "+", fonts_get_system_font(FONT_KEY_GOTHIC_18_BOLD), plus_rect, GTextOverflowModeTrailingEllipsis, GTextAlignmentCenter, NULL);
+
+    GRect minus_rect = GRect(bounds.size.w - icon_size - margin, bounds.size.h - 36 - icon_size - margin, icon_size, icon_size);
+    graphics_context_set_text_color(ctx, GColorBlack);
+    graphics_draw_text(ctx, "-", fonts_get_system_font(FONT_KEY_GOTHIC_18_BOLD), minus_rect, GTextOverflowModeTrailingEllipsis, GTextAlignmentCenter, NULL);
 }
 
 Layer* navigation_create_map_layer(GRect bounds)
@@ -93,6 +106,15 @@ void navigation_destroy_map_layer(void)
     }
 }
 
+void navigation_cancel_transfer(void)
+{
+    s_chunks_received = 0;
+    s_transfer_active = false;
+#ifdef DEBUG_PNG
+    APP_LOG(APP_LOG_LEVEL_INFO, "Transfer cancelled");
+#endif
+}
+
 bool navigation_handle_message(DictionaryIterator* iter)
 {
     Tuple* palette = dict_find(iter, MESSAGE_KEY_IMAGE_PALETTE);
@@ -102,6 +124,7 @@ bool navigation_handle_message(DictionaryIterator* iter)
 
     if (palette)
     {
+        s_transfer_active = true;
         s_chunks_received = 0;
         if (palette->length == 128)
         {
@@ -121,6 +144,7 @@ bool navigation_handle_message(DictionaryIterator* iter)
 
     if (idx && total && data)
     {
+        if (!s_transfer_active) return true;
         if (idx->value->uint32 == 0)
         {
             s_chunks_received = 0;
