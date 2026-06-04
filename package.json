@@ -16,6 +16,7 @@
             "IMAGE_CHUNK_INDEX",
             "IMAGE_CHUNKS_TOTAL",
             "IMAGE_CHUNK_DATA",
+            "IMAGE_CHUNK_SIZE",
             "IMAGE_PALETTE",
             "ZOOM_DIR",
             "REQUEST_DESTINATIONS",

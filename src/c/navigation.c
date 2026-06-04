@@ -1,8 +1,8 @@
 #include <pebble.h>
 #include "navigation.h"
 
-#define CHUNK_SIZE            8000
 #define MAX_BITMAP_DATA_SIZE  50000
+static unsigned int s_chunk_size;
 
 #define DEBUG_PNG
 
@@ -26,7 +26,7 @@ static int s_bitmap_width = SCREEN_W;
 static int s_bitmap_height = SCREEN_H;
 static int s_bitmap_data_size = SCREEN_W * SCREEN_H;
 static uint16_t s_palette_rgb565[64];
-static int s_palette_received = 0;
+static int s_palette_received = 1;
 static bool s_transfer_active = false;
 
 static void apply_palette(GBitmap* bmp)
@@ -79,6 +79,37 @@ static void map_update_proc(Layer* layer, GContext* ctx)
     GRect minus_rect = GRect(bounds.size.w - icon_size - margin, bounds.size.h - 36 - icon_size - margin, icon_size, icon_size);
     graphics_context_set_text_color(ctx, GColorBlack);
     graphics_draw_text(ctx, "-", fonts_get_system_font(FONT_KEY_GOTHIC_18_BOLD), minus_rect, GTextOverflowModeTrailingEllipsis, GTextAlignmentCenter, NULL);
+}
+
+static void init_default_palette(void)
+{
+    for (int i = 0; i < 64; i++)
+    {
+        int r = (i >> 4) & 0x3;
+        int g = (i >> 2) & 0x3;
+        int b = i & 0x3;
+        uint16_t r5 = (r * 31 + 1) / 3;
+        uint16_t g6 = (g * 63 + 1) / 3;
+        uint16_t b5 = (b * 31 + 1) / 3;
+        s_palette_rgb565[i] = (r5 << 11) | (g6 << 5) | b5;
+    }
+}
+
+void navigation_init(void)
+{
+    init_default_palette();
+    unsigned int max_inbox = app_message_inbox_size_maximum();
+    s_chunk_size = max_inbox - 32;
+    if (s_chunk_size > MAX_BITMAP_DATA_SIZE)
+    {
+        s_chunk_size = MAX_BITMAP_DATA_SIZE;
+    }
+    APP_LOG(APP_LOG_LEVEL_INFO, "Chunk size set to %d (max_inbox=%d)", s_chunk_size, max_inbox);
+}
+
+int navigation_get_chunk_size(void)
+{
+    return s_chunk_size;
 }
 
 Layer* navigation_create_map_layer(GRect bounds)
@@ -144,9 +175,9 @@ bool navigation_handle_message(DictionaryIterator* iter)
 
     if (idx && total && data)
     {
-        if (!s_transfer_active) return true;
         if (idx->value->uint32 == 0)
         {
+            s_transfer_active = true;
             s_chunks_received = 0;
 #ifdef DEBUG_PNG
             APP_LOG(APP_LOG_LEVEL_INFO, "Bitmap transfer starting, total=%lu", total->value->uint32);
@@ -157,7 +188,7 @@ bool navigation_handle_message(DictionaryIterator* iter)
         APP_LOG(APP_LOG_LEVEL_INFO, "Chunk %d/%lu (%d bytes)", chunk_index, total->value->uint32, data->length);
 #endif
 
-        memcpy(&s_bitmap_data[chunk_index * CHUNK_SIZE],
+        memcpy(&s_bitmap_data[chunk_index * s_chunk_size],
                data->value->data, data->length);
         s_chunks_received++;
 

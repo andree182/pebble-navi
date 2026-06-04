@@ -21,21 +21,12 @@ export interface MapState {
 }
 
 export interface RenderOutput {
-  pixels: string;
-  palette: string;
+  pixels: Uint8Array;
   route?: RouteResult;
   nextStep?: {
     step: RouteStep;
     remainingDist: number;
   };
-}
-
-function encodeB64(bytes: Uint8Array): string {
-  let binary = '';
-  for (let i = 0; i < bytes.length; i++) {
-    binary += String.fromCharCode(bytes[i]);
-  }
-  return btoa(binary);
 }
 
 async function renderForState(s: MapState, existingRoute?: RouteResult): Promise<RenderOutput> {
@@ -80,13 +71,7 @@ async function renderForState(s: MapState, existingRoute?: RouteResult): Promise
     tiles,
   });
 
-  const { pixels, palette } = quantizeToPebble(rgba, s.width, s.height);
-
-  const paletteBytes = new Uint8Array(128);
-  for (let i = 0; i < 64; i++) {
-    paletteBytes[i * 2] = palette[i] & 0xff;
-    paletteBytes[i * 2 + 1] = (palette[i] >> 8) & 0xff;
-  }
+  const pixels = quantizeToPebble(rgba, s.width, s.height).pixels;
 
   let nextStep: { step: RouteStep; remainingDist: number } | undefined;
   if (route && s.currentPos) {
@@ -95,8 +80,7 @@ async function renderForState(s: MapState, existingRoute?: RouteResult): Promise
   }
 
   return {
-    pixels: encodeB64(pixels),
-    palette: encodeB64(paletteBytes),
+    pixels,
     route,
     nextStep,
   };

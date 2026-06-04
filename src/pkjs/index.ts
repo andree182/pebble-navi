@@ -2,7 +2,7 @@ import './server/polyfills';
 import { BuildSettingsMenu } from './settings';
 import { createPipeline, MapState, RenderOutput } from './server/pipeline';
 
-const CHUNK_SIZE = 8000;
+let CHUNK_SIZE = 8000;
 
 const DEBUG_PNG = true;
 
@@ -40,53 +40,13 @@ function saveDestinations(): void {
   } catch (e) {}
 }
 
-function sendBitmapToWatch(pixelsBase64: string, paletteBase64: string, onDone?: () => void): void {
+function sendBitmapToWatch(pixels: Uint8Array, onDone?: () => void): void {
   const gen = ++sendGeneration;
-  if (DEBUG_PNG)
-    console.log(
-      'sendBitmapToWatch: gen=' + gen + ' pixels len=' +
-        pixelsBase64.length +
-        ' palette len=' +
-        paletteBase64.length,
-    );
-
-  let pixels: string, paletteBytes: string;
-  try {
-    pixels = atob(pixelsBase64);
-    paletteBytes = atob(paletteBase64);
-  } catch (e) {
-    if (DEBUG_PNG) console.log('atob failed: ' + e);
-    if (onDone) onDone();
-    return;
-  }
-  if (DEBUG_PNG)
-    console.log(
-      'atob ok: pixels=' + pixels.length + ' bytes, palette=' + paletteBytes.length + ' bytes',
-    );
-
   const totalChunks = Math.ceil(pixels.length / CHUNK_SIZE);
-  if (DEBUG_PNG) console.log('Sending ' + totalChunks + ' chunks');
+  if (DEBUG_PNG)
+    console.log('sendBitmapToWatch: gen=' + gen + ' pixels=' + pixels.length + ' bytes, chunks=' + totalChunks);
 
-  const paletteArr: number[] = [];
-  for (let i = 0; i < paletteBytes.length; i++) {
-    paletteArr.push(paletteBytes.charCodeAt(i));
-  }
-
-  Pebble.sendAppMessage(
-    { IMAGE_PALETTE: paletteArr },
-    function () {
-      if (gen !== sendGeneration) {
-        if (DEBUG_PNG) console.log('Palette send cancelled (gen ' + gen + ')');
-        return;
-      }
-      if (DEBUG_PNG) console.log('Palette sent ok');
-      sendChunk(0);
-    },
-    function (err) {
-      if (DEBUG_PNG) console.log('Palette send failed: ' + err);
-      if (onDone) onDone();
-    },
-  );
+  sendChunk(0);
 
   function sendChunk(index: number): void {
     if (gen !== sendGeneration) {
@@ -95,27 +55,25 @@ function sendBitmapToWatch(pixelsBase64: string, paletteBase64: string, onDone?:
     }
     if (index >= totalChunks) {
       if (DEBUG_PNG) console.log('All ' + totalChunks + ' chunks sent');
-
       if (onDone) onDone();
       return;
     }
-    const chunk = pixels.substr(index * CHUNK_SIZE, CHUNK_SIZE);
+    const start = index * CHUNK_SIZE;
+    const end = Math.min(start + CHUNK_SIZE, pixels.length);
     const bytes: number[] = [];
-    for (let i = 0; i < chunk.length; i++) {
-      bytes.push(chunk.charCodeAt(i));
+    for (let i = start; i < end; i++) {
+      bytes.push(pixels[i]);
     }
 
     if (DEBUG_PNG)
       console.log('Sending chunk ' + index + '/' + totalChunks + ' (' + bytes.length + ' bytes)');
 
-    const dict = {
-      IMAGE_CHUNK_INDEX: index,
-      IMAGE_CHUNKS_TOTAL: totalChunks,
-      IMAGE_CHUNK_DATA: bytes,
-    };
-
     Pebble.sendAppMessage(
-      dict,
+      {
+        IMAGE_CHUNK_INDEX: index,
+        IMAGE_CHUNKS_TOTAL: totalChunks,
+        IMAGE_CHUNK_DATA: bytes,
+      },
       function () {
         if (gen !== sendGeneration) {
           if (DEBUG_PNG) console.log('Chunk ' + index + ' ack cancelled (gen ' + gen + ')');
@@ -168,10 +126,8 @@ function refresh(): void {
     .render()
     .then(function (output) {
       if (DEBUG_PNG)
-        console.log(
-          'render done: pixels=' + output.pixels.length + ' palette=' + output.palette.length,
-        );
-      sendBitmapToWatch(output.pixels, output.palette, function () {
+        console.log('render done: pixels=' + output.pixels.length + ' bytes');
+      sendBitmapToWatch(output.pixels, function () {
         rendering = false;
       });
       sendRouteToWatch(output);
@@ -264,6 +220,10 @@ Pebble.addEventListener('ready', function () {
 Pebble.addEventListener('appmessage', function (e) {
   console.log('AppMessage received');
   const payload = e.payload as any;
+  if (payload.IMAGE_CHUNK_SIZE != null) {
+    CHUNK_SIZE = payload.IMAGE_CHUNK_SIZE;
+    if (DEBUG_PNG) console.log('Chunk size set to ' + CHUNK_SIZE + ' from watch');
+  }
   if (payload.ZOOM_DIR != null) {
     if (!pipeline) return;
     sendGeneration++;

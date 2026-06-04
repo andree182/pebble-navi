@@ -101,6 +101,20 @@ static void click_config_provider(void* context)
     window_single_click_subscribe(BUTTON_ID_SELECT, select_click_handler);
 }
 
+static void send_chunk_size(void)
+{
+    DictionaryIterator* iter;
+    AppMessageResult result = app_message_outbox_begin(&iter);
+    if (result != APP_MSG_OK)
+    {
+        APP_LOG(APP_LOG_LEVEL_ERROR, "send_chunk_size: outbox_begin failed %d", result);
+        return;
+    }
+    dict_write_uint16(iter, MESSAGE_KEY_IMAGE_CHUNK_SIZE, navigation_get_chunk_size());
+    app_message_outbox_send();
+    APP_LOG(APP_LOG_LEVEL_INFO, "Sent chunk size %d to JS", navigation_get_chunk_size());
+}
+
 static void main_window_load(Window* window)
 {
     Layer* window_layer = window_get_root_layer(window);
@@ -124,6 +138,8 @@ static void main_window_load(Window* window)
     layer_add_child(window_layer, text_layer_get_layer(s_next_step_layer));
 
     window_set_click_config_provider(window, click_config_provider);
+
+    send_chunk_size();
 }
 
 static void main_window_unload(Window* window)
@@ -138,6 +154,7 @@ static void init()
     s_main_window = window_create();
     APP_LOG(APP_LOG_LEVEL_INFO, "Windows Created");
 
+    navigation_init();
 
     window_set_background_color(s_main_window, GColorBlack);
     window_set_window_handlers(s_main_window, (WindowHandlers)
@@ -145,14 +162,14 @@ static void init()
         .load = main_window_load,
         .unload = main_window_unload,
     });
-    window_stack_push(s_main_window, true);
-
     app_message_register_inbox_received(inbox_received);
     app_message_register_inbox_dropped(inbox_dropped);
     app_message_register_outbox_failed(outbox_failed);
     app_message_register_outbox_sent(outbox_sent);
 
-    app_message_open(8192, 2048);
+    app_message_open(app_message_inbox_size_maximum(), app_message_outbox_size_maximum());
+
+    window_stack_push(s_main_window, true);
 }
 
 static void deinit()
