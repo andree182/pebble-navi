@@ -20,18 +20,18 @@ Add `SAVE_CURRENT_LOCATION` and `DEST_NAMES_TOTAL` to `package.json` messageKeys
 - Up/down buttons navigate menu; select button confirms
 - Back button closes menu / goes to previous menu level
 
-### 5. Implement menu overlay rendering in `main.c`
+### 5. Implement menu overlay rendering in `menu.c`
 - Create `s_menu_layer` (a Layer) on top of the map
 - Draw a black background with white text items
 - Highlight the selected item with inverted colors (white fill, black text)
 
-### 6. Handle destination name protocol in `main.c`
+### 6. Handle destination name protocol in `menu.c`
 - When "Select Destination" is picked: send `REQUEST_DESTINATIONS` to JS
 - JS sends `DEST_NAMES_TOTAL` first, then each name via `SELECTED_DEST_INDEX` + `NEXT_STEP_NAME`
 - C collects names into a static array; when all received, show destination list menu
 - When user picks a destination: send `SELECTED_DEST_INDEX` to JS, return to map view
 
-### 7. Handle "Save Location" in `main.c`
+### 7. Handle "Save Location" in `menu.c`
 - Send `SAVE_CURRENT_LOCATION` message to JS
 - Return to map view
 

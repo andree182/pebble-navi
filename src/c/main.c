@@ -1,5 +1,6 @@
 #include <pebble.h>
 #include "navigation.h"
+#include "menu.h"
 
 static Window* s_main_window;
 static Layer* s_map_layer;
@@ -9,6 +10,7 @@ static TextLayer* s_next_step_layer;
 static void inbox_received(DictionaryIterator* iter, void* ctx)
 {
     if (navigation_handle_message(iter)) return;
+    if (menu_handle_message(iter)) return;
 
     Tuple* dist = dict_find(iter, MESSAGE_KEY_ROUTE_DISTANCE);
     Tuple* dur = dict_find(iter, MESSAGE_KEY_ROUTE_DURATION);
@@ -75,23 +77,37 @@ static void send_zoom_dir(int dir)
     app_message_outbox_send();
 }
 
-static void select_click_handler(ClickRecognizerRef recognizer, void* context)
+static void menu_send_callback(uint32_t key, uint32_t value)
 {
     DictionaryIterator* iter;
     AppMessageResult result = app_message_outbox_begin(&iter);
     if (result != APP_MSG_OK) return;
-    dict_write_uint8(iter, MESSAGE_KEY_REQUEST_DESTINATIONS, 1);
+    dict_write_uint8(iter, key, value);
     app_message_outbox_send();
+}
+
+static void select_click_handler(ClickRecognizerRef recognizer, void* context)
+{
+    if (menu_handle_select()) return;
+    menu_show_main();
 }
 
 static void up_click_handler(ClickRecognizerRef recognizer, void* context)
 {
+    if (menu_handle_up()) return;
     send_zoom_dir(1);
 }
 
 static void down_click_handler(ClickRecognizerRef recognizer, void* context)
 {
+    if (menu_handle_down()) return;
     send_zoom_dir(0);
+}
+
+static void back_click_handler(ClickRecognizerRef recognizer, void* context)
+{
+    if (menu_handle_back()) return;
+    window_stack_pop(s_main_window);
 }
 
 static void click_config_provider(void* context)
@@ -99,6 +115,7 @@ static void click_config_provider(void* context)
     window_single_click_subscribe(BUTTON_ID_UP, up_click_handler);
     window_single_click_subscribe(BUTTON_ID_DOWN, down_click_handler);
     window_single_click_subscribe(BUTTON_ID_SELECT, select_click_handler);
+    window_single_click_subscribe(BUTTON_ID_BACK, back_click_handler);
 }
 
 static void send_chunk_size(void)
@@ -139,6 +156,8 @@ static void main_window_load(Window* window)
 
     window_set_click_config_provider(window, click_config_provider);
 
+    menu_init(window_layer, menu_send_callback);
+
     send_chunk_size();
 }
 
@@ -174,6 +193,7 @@ static void init()
 
 static void deinit()
 {
+    menu_destroy();
     window_destroy(s_main_window);
 }
 
