@@ -27,7 +27,7 @@ fromEvent(Pebble, 'appmessage')
   .pipe(map((event) => event.payload as any))
   .subscribe((payload) => {
     try {
-      console.log('AppMessage received', JSON.stringify(payload));
+      if (ENABLE_LOGS) console.log('AppMessage received', JSON.stringify(payload));
 
       if (payload.REQUEST_DESTINATIONS !== undefined) {
         sendDestinationsToWatch();

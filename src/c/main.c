@@ -13,7 +13,7 @@ static char* s_next_step_text;
 static bool s_js_ready = false;
 static bool s_pending = false;
 static uint32_t s_pending_key;
-static int s_pending_val;
+static unsigned int s_pending_val;
 
 static void try_flush_pending(void)
 {
@@ -21,7 +21,7 @@ static void try_flush_pending(void)
     DictionaryIterator* iter;
     AppMessageResult result = app_message_outbox_begin(&iter);
     if (result != APP_MSG_OK) return;
-    dict_write_int8(iter, s_pending_key, s_pending_val);
+    dict_write_int32(iter, s_pending_key, (int)s_pending_val);
     app_message_outbox_send();
     s_pending = false;
 }
@@ -85,7 +85,7 @@ static void outbox_sent(DictionaryIterator* iterator, void* context)
     try_flush_pending();
 }
 
-static void enqueue_send(uint32_t key, int value)
+static void enqueue_send(uint32_t key, unsigned int value)
 {
     s_pending = true;
     s_pending_key = key;
