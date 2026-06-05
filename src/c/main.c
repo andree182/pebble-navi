@@ -7,24 +7,25 @@ static Layer* s_map_layer;
 static TextLayer* s_route_summary_layer;
 static TextLayer* s_next_step_layer;
 static TextLayer* s_waiting_layer;
-static bool s_js_ready = false;
 
-static void send_chunk_size(void);
+static bool s_js_ready = false;
 
 static void inbox_received(DictionaryIterator* iter, void* ctx)
 {
+    APP_LOG(APP_LOG_LEVEL_DEBUG, "Received AppMessage");
+
+    Tuple* t = dict_read_first(iter);
+    while (t) {
+        APP_LOG(APP_LOG_LEVEL_DEBUG, "  key=%lu", t->key);
+        t = dict_read_next(iter);
+    }
+
     if (!s_js_ready)
     {
-        Tuple* js_ready = dict_find(iter, MESSAGE_KEY_JSReady);
-        if (js_ready)
-        {
-            s_js_ready = true;
-            layer_remove_from_parent(text_layer_get_layer(s_waiting_layer));
-            text_layer_destroy(s_waiting_layer);
-            s_waiting_layer = NULL;
-            send_chunk_size();
-            return;
-        }
+        s_js_ready = true;
+        layer_remove_from_parent(text_layer_get_layer(s_waiting_layer));
+        text_layer_destroy(s_waiting_layer);
+        s_waiting_layer = NULL;
     }
 
     if (navigation_handle_message(iter)) return;
@@ -90,7 +91,7 @@ static void send_zoom_dir(int dir)
     DictionaryIterator* iter;
     AppMessageResult result = app_message_outbox_begin(&iter);
     if (result != APP_MSG_OK) return;
-    dict_write_uint8(iter, MESSAGE_KEY_ZOOM_DIR, dir);
+    dict_write_int8(iter, MESSAGE_KEY_ZOOM_DIR, dir);
     app_message_outbox_send();
 }
 
@@ -99,7 +100,7 @@ static void menu_send_callback(uint32_t key, uint32_t value)
     DictionaryIterator* iter;
     AppMessageResult result = app_message_outbox_begin(&iter);
     if (result != APP_MSG_OK) return;
-    dict_write_uint8(iter, key, value);
+    dict_write_int8(iter, key, value);
     app_message_outbox_send();
 }
 
@@ -135,20 +136,6 @@ static void click_config_provider(void* context)
     window_single_click_subscribe(BUTTON_ID_BACK, back_click_handler);
 }
 
-static void send_chunk_size(void)
-{
-    DictionaryIterator* iter;
-    AppMessageResult result = app_message_outbox_begin(&iter);
-    if (result != APP_MSG_OK)
-    {
-        APP_LOG(APP_LOG_LEVEL_ERROR, "send_chunk_size: outbox_begin failed %d", result);
-        return;
-    }
-    dict_write_uint16(iter, MESSAGE_KEY_IMAGE_CHUNK_SIZE, navigation_get_chunk_size());
-    app_message_outbox_send();
-    APP_LOG(APP_LOG_LEVEL_INFO, "Sent chunk size %d to JS", navigation_get_chunk_size());
-}
-
 static void main_window_load(Window* window)
 {
     Layer* window_layer = window_get_root_layer(window);
@@ -175,10 +162,10 @@ static void main_window_load(Window* window)
 
     menu_init(window_layer, menu_send_callback);
 
-    s_waiting_layer = text_layer_create(GRect(0, 0, bounds.size.w, bounds.size.h));
+    s_waiting_layer = text_layer_create(GRect(0, bounds.size.h / 2 , bounds.size.w, bounds.size.h / 2));
     text_layer_set_background_color(s_waiting_layer, GColorBlack);
     text_layer_set_text_color(s_waiting_layer, GColorWhite);
-    text_layer_set_font(s_waiting_layer, fonts_get_system_font(FONT_KEY_GOTHIC_24));
+    text_layer_set_font(s_waiting_layer, fonts_get_system_font(FONT_KEY_GOTHIC_28_BOLD));
     text_layer_set_text_alignment(s_waiting_layer, GTextAlignmentCenter);
     text_layer_set_text(s_waiting_layer, "Waiting for\nphone...");
     layer_add_child(window_layer, text_layer_get_layer(s_waiting_layer));
@@ -214,7 +201,8 @@ static void init()
     app_message_register_outbox_failed(outbox_failed);
     app_message_register_outbox_sent(outbox_sent);
 
-    app_message_open(app_message_inbox_size_maximum(), app_message_outbox_size_maximum());
+    app_message_open(app_message_inbox_size_maximum()
+, app_message_outbox_size_maximum());
 
     window_stack_push(s_main_window, true);
 }

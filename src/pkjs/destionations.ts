@@ -1,23 +1,28 @@
-import { callbackForAck, callbackForNack, loadDestinations } from './helper';
+import { loadDestinations } from './helper';
+import { messageQueue } from './message-queue';
 
 export function sendDestinationsToWatch(): void {
   const names = loadDestinations().map(function (d) {
     return d.name || d.lat + ',' + d.lng;
   });
-  Pebble.sendAppMessage(
+
+  function sendNext(i: number) {
+    if (i >= names.length) {
+      return;
+    }
+    messageQueue.enqueue(
+      {
+        SELECTED_DEST_INDEX: i,
+        NEXT_STEP_NAME: names[i],
+      },
+      () => sendNext(i + 1),
+      (err) => console.error('Destination send failed:', err.error),
+    );
+  }
+
+  messageQueue.enqueue(
     { DEST_NAMES_TOTAL: names.length },
-    function () {
-      for (let i = 0; i < names.length; i++) {
-        Pebble.sendAppMessage(
-          {
-            SELECTED_DEST_INDEX: i,
-            NEXT_STEP_NAME: names[i],
-          },
-          callbackForAck,
-          callbackForNack,
-        );
-      }
-    },
-    function () {},
+    () => sendNext(0),
+    (err) => console.error('DEST_NAMES_TOTAL send failed:', err.error),
   );
 }

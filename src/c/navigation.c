@@ -194,33 +194,11 @@ void navigation_destroy_map_layer(void)
 
 bool navigation_handle_message(DictionaryIterator* iter)
 {
-    Tuple* palette = dict_find(iter, MESSAGE_KEY_IMAGE_PALETTE);
+    APP_LOG(APP_LOG_LEVEL_DEBUG, "Handle navigation");
+
     Tuple* idx = dict_find(iter, MESSAGE_KEY_IMAGE_CHUNK_INDEX);
     Tuple* total = dict_find(iter, MESSAGE_KEY_IMAGE_CHUNKS_TOTAL);
     Tuple* data = dict_find(iter, MESSAGE_KEY_IMAGE_CHUNK_DATA);
-
-    if (palette)
-    {
-        s_transfer_active = true;
-        s_chunks_received = 0;
-        s_decompressed_offset = 0;
-        s_rle_state = 0;
-        s_rle_run_count = 0;
-        if (palette->length == 128)
-        {
-            s_palette_received = 1;
-            for (int i = 0; i < 64; i++)
-            {
-                s_palette_rgb565[i] = palette->value->data[i * 2] | (palette->value->data[i * 2 + 1] << 8);
-            }
-            APP_LOG(APP_LOG_LEVEL_INFO, "Palette stored (%d bytes)", palette->length);
-        }
-        else
-        {
-            APP_LOG(APP_LOG_LEVEL_INFO, "Palette msg ignored (wrong size %d)", palette->length);
-        }
-        return true;
-    }
 
     if (idx && total && data)
     {

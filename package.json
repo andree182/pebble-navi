@@ -16,8 +16,6 @@
       "IMAGE_CHUNK_INDEX",
       "IMAGE_CHUNKS_TOTAL",
       "IMAGE_CHUNK_DATA",
-      "IMAGE_CHUNK_SIZE",
-      "IMAGE_PALETTE",
       "ZOOM_DIR",
       "REQUEST_DESTINATIONS",
       "SELECTED_DEST_INDEX",
@@ -28,8 +26,7 @@
       "NEXT_STEP_NAME",
       "NEXT_STEP_DISTANCE",
       "SAVE_CURRENT_LOCATION",
-      "DEST_NAMES_TOTAL",
-      "JSReady"
+      "DEST_NAMES_TOTAL"
     ],
     "projectType": "native",
     "resources": {
@@ -48,10 +45,9 @@
   "version": "1.0.0",
   "scripts": {
     "tsc": "tsc",
-    "bundle": "node build-pkjs.js",
     "build": "tsc && pebble build",
     "start": "npx tsc && pebble build && pebble install --emulator emery",
-    "debug": "npx tsc && pebble build && pebble install --emulator emery & pebble logs --emulator emery",
+    "debug": "pkill -x qemu-pebble && sleep 1 && pebble wipe && pebble clean && npx tsc && pebble build && pebble install --emulator emery & pebble logs --emulator emery",
     "screenshot": "pebble screenshot screenshot.png",
     "push": "npx tsc && pebble build && pebble install --phone",
     "wipe": "pebble wipe",

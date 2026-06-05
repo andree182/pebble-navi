@@ -1,18 +1,32 @@
-import { BehaviorSubject, filter, from, map, Observable, switchMap, takeUntil, tap } from 'rxjs';
+import {
+  BehaviorSubject,
+  catchError,
+  EMPTY,
+  filter,
+  from,
+  map,
+  Observable,
+  switchMap,
+  takeUntil,
+  tap,
+} from 'rxjs';
 import { MapState, renderForState, RenderOutput } from './server/stateRenderer';
 import { Destination } from './index';
 import { RouteResult } from './server/routing';
 import { rleEncode } from './helper';
+import { messageQueue } from './message-queue';
 
 type PartialMapState = Partial<MapState>;
 
 const DEFAULT_ZOOM = 14;
 const DEFAULT_MODE = 'walking';
-const DEFAULT_CHUNK = 8000;
+const DEFAULT_CHUNK = 2048;
 
 export class MapHandler {
   private chunk_size: number = DEFAULT_CHUNK;
   private existingRoute: RouteResult | undefined = undefined;
+  private sending = false;
+  private rendering = false;
   private readonly mapState = new BehaviorSubject<PartialMapState>({});
 
   constructor(destroyApp: Observable<void>) {
@@ -31,7 +45,6 @@ export class MapHandler {
     this.mapState
       .pipe(
         takeUntil(destroyApp),
-        tap((state) => console.info(JSON.stringify(state))),
         filter(
           (state): boolean =>
             state.zoom !== undefined &&
@@ -41,10 +54,18 @@ export class MapHandler {
             state.mode !== undefined,
         ),
         map((state: PartialMapState) => <MapState>state),
-        tap(() => console.info('Filter cleared')),
+        filter(() => !this.rendering),
+        tap(() => (this.rendering = true)),
         switchMap((state) => from(renderForState(state, this.existingRoute))),
+        tap(() => (this.rendering = false)),
+        tap((output) => this.onMapRendered(output)),
+        catchError((err) => {
+          console.error('Map pipeline error:', err);
+          this.rendering = false;
+          return EMPTY;
+        }),
       )
-      .subscribe(this.onMapRendered);
+      .subscribe();
 
     // Set initial Data
     this.mapState.next({
@@ -54,12 +75,6 @@ export class MapHandler {
       width: w,
       height: h,
     });
-  }
-
-  public setImageChunkSize(size: number) {
-    console.info('setImageChunkSize', size);
-
-    this.chunk_size = size;
   }
 
   public updatePosition(pos: GeolocationPosition): void {
@@ -100,7 +115,7 @@ export class MapHandler {
 
     const state = this.mapState.value;
 
-    let newZoom = state.zoom ?? DEFAULT_ZOOM + zoom;
+    let newZoom = state.zoom ? state.zoom + zoom : DEFAULT_ZOOM;
     newZoom = Math.max(1, Math.min(18, newZoom));
 
     this.mapState.next({
@@ -110,14 +125,18 @@ export class MapHandler {
   }
 
   private onMapRendered(renderOutput: RenderOutput): void {
-    console.info('onStateChanged');
     this.existingRoute = renderOutput.route;
 
-    //this.sendBitmapToWatch(renderOutput.pixels);
-    //this.sendRouteToWatch(renderOutput);
+    this.sendBitmapToWatch(renderOutput.pixels);
+    this.sendRouteToWatch(renderOutput);
   }
 
   private sendBitmapToWatch(pixels: Uint8Array): void {
+    if (this.sending) {
+      return;
+    }
+    this.sending = true;
+
     const chunkSize = this.chunk_size;
     const compressed = rleEncode(pixels);
     const totalChunks = Math.ceil(compressed.length / chunkSize);
@@ -132,8 +151,11 @@ export class MapHandler {
 
     const sendChunk = (index: number): void => {
       if (index >= totalChunks) {
+        this.sending = false;
+        console.log('Finished sending chunk ' + totalChunks);
         return;
       }
+
       const start = index * chunkSize;
       const end = Math.min(start + chunkSize, compressed.length);
       const bytes: number[] = [];
@@ -143,18 +165,19 @@ export class MapHandler {
 
       console.log('Sending chunk ' + index + '/' + totalChunks + ' (' + bytes.length + ' bytes)');
 
-      Pebble.sendAppMessage(
+      messageQueue.enqueue(
         {
           IMAGE_CHUNK_INDEX: index,
           IMAGE_CHUNKS_TOTAL: totalChunks,
           IMAGE_CHUNK_DATA: bytes,
         },
-        function () {
-          console.log('Chunk ' + index + ' acked');
+        () => {
           sendChunk(index + 1);
+          console.log('Chunk ' + index + ' acked');
         },
-        function (err: any) {
-          console.log('Chunk ' + index + ' failed: ' + JSON.stringify(err));
+        (err: any) => {
+          console.error('Chunk ' + index + ' failed: ' + JSON.stringify(err.error));
+          this.sending = false;
         },
       );
     };
@@ -178,12 +201,10 @@ export class MapHandler {
       dict.NEXT_STEP_DISTANCE = Math.round(ns.remainingDist);
     }
 
-    Pebble.sendAppMessage(
+    messageQueue.enqueue(
       dict,
-      function () {},
-      function (err) {
-        console.log('Route info send failed: ' + err);
-      },
+      () => {},
+      (err) => console.error('Route info send failed: ' + err.error),
     );
   }
 }

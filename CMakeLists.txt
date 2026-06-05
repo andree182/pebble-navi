@@ -19,7 +19,7 @@ if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/package.json")
         math(EXPR MAX_IDX "${MESSAGE_KEYS_LEN} - 1")
         foreach(IDX RANGE ${MAX_IDX})
             string(JSON KEY GET "${PACKAGE_JSON_CONTENT}" "pebble" "messageKeys" ${IDX})
-            set(HEADER_CONTENT "${HEADER_CONTENT}#define MESSAGE_KEY_${KEY} ${IDX}\n")
+            set(HEADER_CONTENT "${HEADER_CONTENT}#define MESSAGE_KEY_${KEY} 100${IDX}\n")
         endforeach()
         
         # Write the auto-generated header
