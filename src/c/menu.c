@@ -3,7 +3,7 @@
 
 #define MAX_DEST_NAMES 30
 #define MAX_NAME_LEN 32
-#define ITEM_HEIGHT 30
+#define ITEM_HEIGHT 36
 
 static MenuMode s_mode = MODE_MAP;
 static Layer* s_menu_layer;
@@ -73,7 +73,7 @@ static void menu_layer_update_proc(Layer* layer, GContext* ctx)
             }
 
             graphics_draw_text(ctx, text,
-                               fonts_get_system_font(FONT_KEY_GOTHIC_18),
+                               fonts_get_system_font(FONT_KEY_GOTHIC_24),
                                item_rect, GTextOverflowModeTrailingEllipsis,
                                GTextAlignmentCenter, NULL);
         }
@@ -107,7 +107,7 @@ static void menu_layer_update_proc(Layer* layer, GContext* ctx)
             }
 
             graphics_draw_text(ctx, s_dest_names[i],
-                               fonts_get_system_font(FONT_KEY_GOTHIC_18),
+                               fonts_get_system_font(FONT_KEY_GOTHIC_24),
                                item_rect, GTextOverflowModeTrailingEllipsis,
                                GTextAlignmentCenter, NULL);
         }

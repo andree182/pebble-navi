@@ -1,9 +1,9 @@
-import { loadDestinations } from './helper';
+import { asciiNormalize, loadDestinations } from './helper';
 import { messageQueue } from './message-queue';
 
 export function sendDestinationsToWatch(): void {
   const names = loadDestinations().map(function (d) {
-    return d.name || d.lat + ',' + d.lng;
+    return asciiNormalize(d.name || d.lat + ',' + d.lng);
   });
 
   function sendNext(i: number) {

@@ -38,10 +38,76 @@ export function rleEncode(data: Uint8Array): Uint8Array {
   return new Uint8Array(out);
 }
 
-export function callbackForAck(_e: PebbleKit.AppMessageEvent): void {
-  // Do nothing by default
+const charMap: Record<string, string> = {
+  ä: 'a',
+  ö: 'o',
+  ü: 'u',
+  Ä: 'A',
+  Ö: 'O',
+  Ü: 'U',
+  é: 'e',
+  è: 'e',
+  ê: 'e',
+  ë: 'e',
+  É: 'E',
+  à: 'a',
+  â: 'a',
+  ã: 'a',
+  å: 'a',
+  À: 'A',
+  Â: 'A',
+  Ã: 'A',
+  Å: 'A',
+  ç: 'c',
+  Ç: 'C',
+  ñ: 'n',
+  Ñ: 'N',
+  ó: 'o',
+  ò: 'o',
+  ô: 'o',
+  õ: 'o',
+  Ó: 'O',
+  Ò: 'O',
+  Ô: 'O',
+  Õ: 'O',
+  í: 'i',
+  ì: 'i',
+  î: 'i',
+  ï: 'i',
+  Í: 'I',
+  Ì: 'I',
+  Î: 'I',
+  Ï: 'I',
+  ú: 'u',
+  ù: 'u',
+  û: 'u',
+  Ú: 'U',
+  Ù: 'U',
+  Û: 'U',
+  ý: 'y',
+  ÿ: 'y',
+  Ý: 'Y',
+  ß: 'ss',
+  æ: 'ae',
+  Æ: 'AE',
+  œ: 'oe',
+  Œ: 'OE',
+};
+
+function IsAscii(c: string): boolean {
+  return c.length === 1 && c >= " c >= ' " && c <= '~';
 }
 
-export function callbackForNack(e: PebbleKit.AppMessageEvent): void {
-  console.error(e.error);
+export function asciiNormalize(s: string): string {
+  let out = '';
+  for (let i = 0; i < s.length; i++) {
+    const c = s[i];
+    const mapped = charMap[c];
+    if (mapped) {
+      out += mapped;
+    } else if (IsAscii(c)) {
+      out += c;
+    }
+  }
+  return out.trim();
 }

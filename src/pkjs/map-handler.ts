@@ -14,7 +14,7 @@ import {
 import { MapState, renderForState, RenderOutput } from './server/stateRenderer';
 import { Destination } from './index';
 import { distanceToRoute, RouteResult } from './server/routing';
-import { rleEncode } from './helper';
+import { asciiNormalize, rleEncode } from './helper';
 import { messageQueue } from './message-queue';
 
 type PartialMapState = Partial<MapState>;
@@ -247,20 +247,21 @@ export class MapHandler {
   private sendRouteToWatch(output: RenderOutput): void {
     const dict: Record<string, any> = {};
     if (!output.route) {
-      dict.NAV_INFO_LINE1 = 'Select Destination';
-      dict.NAV_INFO_LINE2 = 'Add in App Setting';
+      dict.NAV_INFO_LINE1 = 'Select a Destination';
+      dict.NAV_INFO_LINE2 = 'Add new Destinations in App Settings';
       dict.ROUTE_ACTIVE = 0;
     } else {
       const d = Math.round(output.route.distance);
       const m = Math.round(output.route.duration / 60);
-      dict.NAV_INFO_LINE1 = d >= 1000
-        ? `${(d / 1000).toFixed(1)} km  ${m} min`
-        : `${d} m  ${m} min`;
+      const h = Math.floor(m / 60);
+      const mins = m % 60;
+      const time = h > 0 ? (mins > 0 ? `${h} h ${mins} min` : `${h} h`) : `${m} min`;
+      dict.NAV_INFO_LINE1 = d >= 1000 ? `${(d / 1000).toFixed(1)} km  ${time}` : `${d} m  ${time}`;
       dict.ROUTE_ACTIVE = 1;
 
       const ns = output.nextStep;
       if (ns && Math.round(ns.remainingDist) > 0) {
-        dict.NAV_INFO_LINE2 = `${ns.step.modifier || ''} ${ns.step.name || ''} (${Math.round(ns.remainingDist)} m)`;
+        dict.NAV_INFO_LINE2 = `${ns.step.modifier || ''} ${asciiNormalize(ns.step.name) || ''} (${Math.round(ns.remainingDist)} m)`;
       } else {
         dict.NAV_INFO_LINE2 = '';
       }

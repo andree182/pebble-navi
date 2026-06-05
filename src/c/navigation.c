@@ -20,6 +20,7 @@ static unsigned int s_chunk_size;
 static Layer* s_map_layer;
 static GBitmap* s_bitmap;
 static uint8_t s_bitmap_data[MAX_BITMAP_DATA_SIZE];
+static char s_time_text[6];
 static int s_chunks_received = 0;
 static int s_decompressed_offset = 0;
 static int s_rle_state = 0;
@@ -64,6 +65,12 @@ static void apply_palette(GBitmap* bmp)
     gbitmap_set_palette(bmp, pal, true);
 }
 
+static void time_tick_handler(struct tm* tick_time, TimeUnits units_changed)
+{
+    strftime(s_time_text, sizeof(s_time_text), "%H:%M", tick_time);
+    if (s_map_layer) layer_mark_dirty(s_map_layer);
+}
+
 static void map_update_proc(Layer* layer, GContext* ctx)
 {
     if (s_bitmap)
@@ -73,15 +80,31 @@ static void map_update_proc(Layer* layer, GContext* ctx)
 
     GRect bounds = layer_get_bounds(layer);
     int icon_size = 22;
-    int margin = 4;
+    int margin = 0;
+
+    graphics_context_set_fill_color(ctx, GColorBulgarianRose);
+    graphics_fill_rect(ctx, GRect(margin, margin, 44, 20), icon_size / 2, GCornerBottomRight);
+    graphics_context_set_text_color(ctx, GColorWhite);
+    graphics_draw_text(ctx, s_time_text, fonts_get_system_font(FONT_KEY_GOTHIC_18_BOLD), GRect(margin, margin - 2, 44, 20), GTextOverflowModeTrailingEllipsis, GTextAlignmentCenter, NULL);
 
     GRect plus_rect = GRect(bounds.size.w - icon_size - margin, margin, icon_size, icon_size);
-    graphics_context_set_text_color(ctx, GColorBlack);
-    graphics_draw_text(ctx, "+", fonts_get_system_font(FONT_KEY_GOTHIC_18_BOLD), plus_rect, GTextOverflowModeTrailingEllipsis, GTextAlignmentCenter, NULL);
+    graphics_context_set_fill_color(ctx, GColorBulgarianRose);
+    graphics_fill_rect(ctx, plus_rect, icon_size / 2, GCornerBottomLeft);
+    graphics_context_set_text_color(ctx, GColorWhite);
+    graphics_draw_text(ctx, "+", fonts_get_system_font(FONT_KEY_GOTHIC_18_BOLD), GRect(plus_rect.origin.x, plus_rect.origin.y - 2, plus_rect.size.w, plus_rect.size.h), GTextOverflowModeTrailingEllipsis, GTextAlignmentCenter, NULL);
 
     GRect minus_rect = GRect(bounds.size.w - icon_size - margin, bounds.size.h - 36 - icon_size - margin, icon_size, icon_size);
-    graphics_context_set_text_color(ctx, GColorBlack);
-    graphics_draw_text(ctx, "-", fonts_get_system_font(FONT_KEY_GOTHIC_18_BOLD), minus_rect, GTextOverflowModeTrailingEllipsis, GTextAlignmentCenter, NULL);
+    graphics_context_set_fill_color(ctx, GColorBulgarianRose);
+    graphics_fill_rect(ctx, minus_rect, icon_size / 2, GCornerTopLeft);
+    graphics_context_set_text_color(ctx, GColorWhite);
+    graphics_draw_text(ctx, "-", fonts_get_system_font(FONT_KEY_GOTHIC_18_BOLD), GRect(minus_rect.origin.x, minus_rect.origin.y - 2, minus_rect.size.w, minus_rect.size.h), GTextOverflowModeTrailingEllipsis, GTextAlignmentCenter, NULL);
+
+    GPoint gear_center = GPoint(bounds.size.w - icon_size / 2 - margin, (bounds.size.h - 36) / 2);
+    GRect gear_rect = GRect(gear_center.x - icon_size / 2, gear_center.y - icon_size / 2, icon_size, icon_size);
+    graphics_context_set_fill_color(ctx, GColorBulgarianRose);
+    graphics_fill_rect(ctx, gear_rect, icon_size / 2, GCornersLeft );
+    graphics_context_set_text_color(ctx, GColorWhite);
+    graphics_draw_text(ctx, "*", fonts_get_system_font(FONT_KEY_GOTHIC_18_BOLD), GRect(gear_rect.origin.x, gear_rect.origin.y, gear_rect.size.w, gear_rect.size.h), GTextOverflowModeTrailingEllipsis, GTextAlignmentCenter, NULL);
 }
 
 static void init_default_palette(void)
@@ -158,6 +181,9 @@ void navigation_init(void)
     {
         s_chunk_size = MAX_BITMAP_DATA_SIZE;
     }
+    time_t now = time(NULL);
+    time_tick_handler(localtime(&now), MINUTE_UNIT);
+    tick_timer_service_subscribe(MINUTE_UNIT, time_tick_handler);
     APP_LOG(APP_LOG_LEVEL_INFO, "Chunk size set to %d (max_inbox=%d)", s_chunk_size, max_inbox);
 }
 
