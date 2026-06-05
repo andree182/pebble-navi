@@ -19,16 +19,13 @@
       "ZOOM_DIR",
       "REQUEST_DESTINATIONS",
       "SELECTED_DEST_INDEX",
-      "ROUTE_DISTANCE",
-      "ROUTE_DURATION",
-      "NEXT_STEP_TYPE",
-      "NEXT_STEP_MODIFIER",
-      "NEXT_STEP_NAME",
-      "NEXT_STEP_DISTANCE",
       "SAVE_CURRENT_LOCATION",
+      "DEST_NAME",
       "DEST_NAMES_TOTAL",
-      "RECALCULATING",
-      "STOP_ROUTING"
+      "STOP_ROUTING",
+      "NAV_INFO_LINE1",
+      "NAV_INFO_LINE2",
+      "ROUTE_ACTIVE"
     ],
     "projectType": "native",
     "resources": {

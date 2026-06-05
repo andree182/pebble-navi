@@ -7,6 +7,8 @@ static Layer* s_map_layer;
 static TextLayer* s_route_summary_layer;
 static TextLayer* s_next_step_layer;
 static TextLayer* s_waiting_layer;
+static char* s_route_summary_text;
+static char* s_next_step_text;
 
 static bool s_js_ready = false;
 static bool s_pending = false;
@@ -39,50 +41,29 @@ static void inbox_received(DictionaryIterator* iter, void* ctx)
     if (navigation_handle_message(iter)) return;
     if (menu_handle_message(iter)) return;
 
-    if (dict_find(iter, MESSAGE_KEY_RECALCULATING))
+    Tuple* nav_line1 = dict_find(iter, MESSAGE_KEY_NAV_INFO_LINE1);
+    if (nav_line1)
     {
-        text_layer_set_text(s_route_summary_layer, "Recalculating...");
-        return;
+        free(s_route_summary_text);
+        size_t len = strlen(nav_line1->value->cstring) + 1;
+        s_route_summary_text = malloc(len);
+        memcpy(s_route_summary_text, nav_line1->value->cstring, len);
+        text_layer_set_text(s_route_summary_layer, s_route_summary_text);
+    }
+    Tuple* nav_line2 = dict_find(iter, MESSAGE_KEY_NAV_INFO_LINE2);
+    if (nav_line2)
+    {
+        free(s_next_step_text);
+        size_t len = strlen(nav_line2->value->cstring) + 1;
+        s_next_step_text = malloc(len);
+        memcpy(s_next_step_text, nav_line2->value->cstring, len);
+        text_layer_set_text(s_next_step_layer, s_next_step_text);
     }
 
-    Tuple* dist = dict_find(iter, MESSAGE_KEY_ROUTE_DISTANCE);
-    Tuple* dur = dict_find(iter, MESSAGE_KEY_ROUTE_DURATION);
-    if (dist && dur)
+    Tuple* route_active = dict_find(iter, MESSAGE_KEY_ROUTE_ACTIVE);
+    if (route_active)
     {
-        menu_set_has_route(true);
-        static char summary[32];
-        int d = dist->value->int32;
-        int m = dur->value->int32;
-        if (d >= 1000)
-        {
-            snprintf(summary, sizeof(summary), "%d.%d km  %d min", (int)(d / 1000.0), (d % 1000) / 100 , m);
-        }
-        else
-        {
-            snprintf(summary, sizeof(summary), "%d m  %d min", d, m);
-        }
-        text_layer_set_text(s_route_summary_layer, summary);
-    }
-
-    Tuple* ns_type = dict_find(iter, MESSAGE_KEY_NEXT_STEP_TYPE);
-    Tuple* ns_mod = dict_find(iter, MESSAGE_KEY_NEXT_STEP_MODIFIER);
-    Tuple* ns_name = dict_find(iter, MESSAGE_KEY_NEXT_STEP_NAME);
-    Tuple* ns_dist = dict_find(iter, MESSAGE_KEY_NEXT_STEP_DISTANCE);
-    if (ns_type)
-    {
-        static char next_step[64];
-        const char* mod = ns_mod ? ns_mod->value->cstring : "";
-        const char* name = ns_name ? ns_name->value->cstring : "";
-        int nd = ns_dist ? ns_dist->value->int32 : 0;
-        if (nd > 0)
-        {
-            snprintf(next_step, sizeof(next_step), "%s %s (%d m)", mod, name, nd);
-        }
-        else
-        {
-            text_layer_set_text(s_next_step_layer, "");
-        }
-        text_layer_set_text(s_next_step_layer, next_step);
+        menu_set_has_route(route_active->value->int32 != 0);
     }
 }
 
@@ -192,6 +173,10 @@ static void main_window_unload(Window* window)
     navigation_destroy_map_layer();
     text_layer_destroy(s_route_summary_layer);
     text_layer_destroy(s_next_step_layer);
+    free(s_route_summary_text);
+    s_route_summary_text = NULL;
+    free(s_next_step_text);
+    s_next_step_text = NULL;
     if (s_waiting_layer)
     {
         text_layer_destroy(s_waiting_layer);

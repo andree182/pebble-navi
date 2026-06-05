@@ -13,7 +13,7 @@ export function sendDestinationsToWatch(): void {
     messageQueue.enqueue(
       {
         SELECTED_DEST_INDEX: i,
-        NEXT_STEP_NAME: names[i],
+        DEST_NAME: names[i],
       },
       () => sendNext(i + 1),
       (err) => console.error('Destination send failed:', err.error),

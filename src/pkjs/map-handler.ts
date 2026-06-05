@@ -76,9 +76,9 @@ export class MapHandler {
               this.existingRoute = undefined;
               state.origin = state.currentPos;
               messageQueue.enqueue(
-                { RECALCULATING: 1 },
+                { NAV_INFO_LINE1: 'Recalculating...', NAV_INFO_LINE2: '', ROUTE_ACTIVE: 0 },
                 () => {},
-                (err) => console.error('RECALCULATING send failed: ' + err.error),
+                (err) => console.error('Recalculating send failed: ' + err.error),
               );
             }
           }
@@ -245,19 +245,25 @@ export class MapHandler {
   }
 
   private sendRouteToWatch(output: RenderOutput): void {
-    if (!output.route) return;
+    const dict: Record<string, any> = {};
+    if (!output.route) {
+      dict.NAV_INFO_LINE1 = 'Select Destination';
+      dict.NAV_INFO_LINE2 = 'Add in App Setting';
+      dict.ROUTE_ACTIVE = 0;
+    } else {
+      const d = Math.round(output.route.distance);
+      const m = Math.round(output.route.duration / 60);
+      dict.NAV_INFO_LINE1 = d >= 1000
+        ? `${(d / 1000).toFixed(1)} km  ${m} min`
+        : `${d} m  ${m} min`;
+      dict.ROUTE_ACTIVE = 1;
 
-    const dict: Record<string, any> = {
-      ROUTE_DISTANCE: Math.round(output.route.distance),
-      ROUTE_DURATION: Math.round(output.route.duration) / 60,
-    };
-
-    const ns = output.nextStep;
-    if (ns) {
-      dict.NEXT_STEP_TYPE = ns.step.type;
-      dict.NEXT_STEP_MODIFIER = ns.step.modifier || '';
-      dict.NEXT_STEP_NAME = ns.step.name || '';
-      dict.NEXT_STEP_DISTANCE = Math.round(ns.remainingDist);
+      const ns = output.nextStep;
+      if (ns && Math.round(ns.remainingDist) > 0) {
+        dict.NAV_INFO_LINE2 = `${ns.step.modifier || ''} ${ns.step.name || ''} (${Math.round(ns.remainingDist)} m)`;
+      } else {
+        dict.NAV_INFO_LINE2 = '';
+      }
     }
 
     messageQueue.enqueue(

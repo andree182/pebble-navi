@@ -291,7 +291,7 @@ bool menu_handle_message(DictionaryIterator* iter)
     if (s_collecting_dests)
     {
         Tuple* idx_t = dict_find(iter, MESSAGE_KEY_SELECTED_DEST_INDEX);
-        Tuple* name_t = dict_find(iter, MESSAGE_KEY_NEXT_STEP_NAME);
+        Tuple* name_t = dict_find(iter, MESSAGE_KEY_DEST_NAME);
         if (idx_t && name_t)
         {
             int idx = idx_t->value->uint8;
