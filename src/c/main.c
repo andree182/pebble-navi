@@ -103,6 +103,7 @@ static void menu_send_callback(uint32_t key, uint32_t value)
 
 static void select_click_handler(ClickRecognizerRef recognizer, void* context)
 {
+    if (!s_js_ready) return;
     if (menu_handle_select()) return;
     menu_show_main();
 }
@@ -159,8 +160,8 @@ static void main_window_load(Window* window)
 
     menu_init(window_layer, menu_send_callback);
 
-    s_waiting_layer = text_layer_create(GRect(0, bounds.size.h / 2 , bounds.size.w, bounds.size.h / 2));
-    text_layer_set_background_color(s_waiting_layer, GColorBlack);
+    s_waiting_layer = text_layer_create(GRect(0, 0, bounds.size.w, bounds.size.h));
+    text_layer_set_background_color(s_waiting_layer, GColorBulgarianRose);
     text_layer_set_text_color(s_waiting_layer, GColorWhite);
     text_layer_set_font(s_waiting_layer, fonts_get_system_font(FONT_KEY_GOTHIC_28_BOLD));
     text_layer_set_text_alignment(s_waiting_layer, GTextAlignmentCenter);

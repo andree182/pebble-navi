@@ -1,7 +1,7 @@
 import './server/polyfills';
 import { buildSettings, saveSettings } from './settings';
 import { loadDestinations, saveDestinations } from './helper';
-import { fromEvent, interval, map, startWith, Subject, takeUntil, tap } from 'rxjs';
+import { fromEvent, map, Subject, takeUntil, tap } from 'rxjs';
 import { sendDestinationsToWatch } from './destionations';
 import { MapHandler } from './map-handler';
 
@@ -45,6 +45,10 @@ fromEvent(Pebble, 'appmessage')
           } else {
             console.error('Destination not found, index', payload.SELECTED_DEST_INDEX);
           }
+        }
+
+        if (payload.ROUTE_MODE !== undefined) {
+          mapHandler.setMode(payload.ROUTE_MODE);
         }
 
         if (payload.STOP_ROUTING !== undefined) {
@@ -116,7 +120,7 @@ fromEvent(Pebble, 'ready')
       });
 
       navigationWatcher = navigator.geolocation.watchPosition(
-        (pos) => {}, // location.next(pos),
+        (pos) => location.next(pos),
         console.error,
         {
           enableHighAccuracy: true,

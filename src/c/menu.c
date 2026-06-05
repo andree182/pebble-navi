@@ -11,6 +11,8 @@ static MenuSendCallback s_send_cb;
 static bool s_has_route;
 static bool s_backlight_on;
 static char s_backlight_label[20];
+static RouteMode s_route_mode;
+static char s_route_label[20];
 
 static int s_selected_index;
 
@@ -26,6 +28,17 @@ static void update_backlight_label(void)
              s_backlight_on ? "Backlight: On" : "Backlight: Off");
 }
 
+static void update_route_label(void)
+{
+    static const char* names[] = {
+        [ROUTE_MODE_WALKING] = "Walking",
+        [ROUTE_MODE_CYCLING] = "Cycling",
+        [ROUTE_MODE_DRIVING] = "Driving",
+    };
+    snprintf(s_route_label, sizeof(s_route_label),
+             "Mode: %s", names[s_route_mode]);
+}
+
 static void menu_layer_update_proc(Layer* layer, GContext* ctx)
 {
     GRect bounds = layer_get_bounds(layer);
@@ -35,7 +48,7 @@ static void menu_layer_update_proc(Layer* layer, GContext* ctx)
 
     if (s_mode == MODE_MAIN_MENU)
     {
-        int num_items = s_has_route ? 4 : 3;
+        int num_items = s_has_route ? 5 : 4;
         int total_h = num_items * ITEM_HEIGHT;
         int start_y = (bounds.size.h - total_h) / 2;
 
@@ -53,6 +66,10 @@ static void menu_layer_update_proc(Layer* layer, GContext* ctx)
             else if (i == 2)
             {
                 text = s_backlight_label;
+            }
+            else if (i == 3)
+            {
+                text = s_route_label;
             }
             else
             {
@@ -122,6 +139,8 @@ void menu_init(Layer* parent_layer, MenuSendCallback send_cb)
     s_has_route = false;
     s_backlight_on = false;
     update_backlight_label();
+    s_route_mode = ROUTE_MODE_WALKING;
+    update_route_label();
     s_collecting_dests = false;
     s_dest_names_total = 0;
     s_dest_names_received = 0;
@@ -205,7 +224,7 @@ bool menu_handle_down(void)
     int max_index;
     if (s_mode == MODE_MAIN_MENU)
     {
-        max_index = s_has_route ? 3 : 2;
+        max_index = s_has_route ? 4 : 3;
     }
     else
     {
@@ -241,6 +260,13 @@ bool menu_handle_select(void)
             s_backlight_on = !s_backlight_on;
             light_enable(s_backlight_on);
             update_backlight_label();
+            layer_mark_dirty(s_menu_layer);
+        }
+        else if (s_selected_index == 3)
+        {
+            s_route_mode = (s_route_mode + 1) % 3;
+            update_route_label();
+            if (s_send_cb) s_send_cb(MESSAGE_KEY_ROUTE_MODE, s_route_mode);
             layer_mark_dirty(s_menu_layer);
         }
         else

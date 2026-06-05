@@ -23,6 +23,18 @@ const DEFAULT_ZOOM = 14;
 const DEFAULT_MODE = 'walking';
 const DEFAULT_CHUNK = 2048;
 
+export const RouteMode = {
+  WALKING: 0,
+  CYCLING: 1,
+  DRIVING: 2,
+} as const;
+
+const ROUTE_MODE_NAMES: Record<number, string> = {
+  [RouteMode.WALKING]: 'walking',
+  [RouteMode.CYCLING]: 'cycling',
+  [RouteMode.DRIVING]: 'driving',
+} as const;
+
 export class MapHandler {
   private chunk_size: number = DEFAULT_CHUNK;
   private existingRoute: RouteResult | undefined = undefined;
@@ -137,6 +149,19 @@ export class MapHandler {
       dest: undefined,
       origin: undefined,
     });
+  }
+
+  public setMode(mode: number): void {
+    console.log('setMode', mode);
+
+    const name = ROUTE_MODE_NAMES[mode];
+    if (name) {
+      this.existingRoute = undefined;
+      this.mapState.next({
+        ...this.mapState.value,
+        mode: name,
+      });
+    }
   }
 
   public zoom(zoom: number): void {

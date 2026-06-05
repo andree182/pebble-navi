@@ -8,6 +8,12 @@ typedef enum {
     MODE_DEST_LIST,
 } MenuMode;
 
+typedef enum {
+    ROUTE_MODE_WALKING = 0,
+    ROUTE_MODE_CYCLING = 1,
+    ROUTE_MODE_DRIVING = 2
+} RouteMode;
+
 typedef void (*MenuSendCallback)(uint32_t key, uint32_t value);
 
 void menu_init(Layer* parent_layer, MenuSendCallback send_cb);
