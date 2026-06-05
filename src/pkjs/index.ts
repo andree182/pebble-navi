@@ -1,9 +1,11 @@
 import './server/polyfills';
 import { buildSettings, saveSettings } from './settings';
-import { loadDestinations } from './helper';
+import { loadDestinations, saveDestinations } from './helper';
 import { fromEvent, interval, map, startWith, Subject, takeUntil, tap } from 'rxjs';
 import { sendDestinationsToWatch } from './destionations';
 import { MapHandler } from './map-handler';
+
+const ENABLE_LOGS = false;
 
 console.log('JS App Started');
 
@@ -42,6 +44,28 @@ fromEvent(Pebble, 'appmessage')
             mapHandler.selectRoute(destination);
           } else {
             console.error('Destination not found, index', payload.SELECTED_DEST_INDEX);
+          }
+        }
+
+        if (payload.STOP_ROUTING !== undefined) {
+          mapHandler.resetRoute();
+        }
+
+        if (payload.SAVE_CURRENT_LOCATION !== undefined) {
+          const pos = mapHandler.getCurrentPosition();
+          if (pos) {
+            const destinations = loadDestinations();
+            const existing = destinations.find((d) => d.name === 'Saved Location');
+            if (existing) {
+              existing.lat = pos.lat;
+              existing.lng = pos.lng;
+            } else {
+              destinations.push({ lat: pos.lat, lng: pos.lng, name: 'Saved Location' });
+            }
+            saveDestinations(destinations);
+            console.log('Saved current location as Saved Location');
+          } else {
+            console.error('No current position available to save');
           }
         }
       }
@@ -87,7 +111,7 @@ fromEvent(Pebble, 'ready')
       mapHandler = new MapHandler(destroyApp);
 
       location.pipe(takeUntil(destroyApp)).subscribe((pos: GeolocationPosition) => {
-        console.log('geolocation event', JSON.stringify(pos));
+        if (ENABLE_LOGS) console.log('geolocation event', JSON.stringify(pos));
         mapHandler?.updatePosition(pos);
       });
 
@@ -114,8 +138,6 @@ fromEvent(Pebble, 'ready')
           longitude += (Math.random() - 0.2) / 1000;
           bering += 10;
           bering = bering % 360;
-
-          console.log(latitude, longitude, bering);
 
           location.next(<GeolocationPosition>(<unknown>{
             coords: {

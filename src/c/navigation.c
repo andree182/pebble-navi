@@ -4,7 +4,7 @@
 #define MAX_BITMAP_DATA_SIZE  50000
 static unsigned int s_chunk_size;
 
-#define DEBUG_PNG
+//#define DEBUG_PNG
 
 #if defined(PBL_PLATFORM_EMERY)
 #define SCREEN_W 200
@@ -209,8 +209,8 @@ bool navigation_handle_message(DictionaryIterator* iter)
             APP_LOG(APP_LOG_LEVEL_INFO, "Bitmap transfer starting, total=%lu", total->value->uint32);
 #endif
         }
-        int chunk_index = idx->value->uint32;
 #ifdef DEBUG_PNG
+        int chunk_index = idx->value->uint32;
         APP_LOG(APP_LOG_LEVEL_INFO, "Chunk %d/%lu (%d bytes)", chunk_index, total->value->uint32, data->length);
 #endif
 

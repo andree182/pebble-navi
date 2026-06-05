@@ -1,3 +1,5 @@
+const ENABLE_LOGS = false;
+
 interface QueuedMessage {
   data: Record<string, any>;
   ackCallback: (e: PebbleKit.AppMessageEvent) => void;
@@ -28,7 +30,7 @@ class MessageQueue {
     const message = this.queue.shift()!;
     this.sending = true;
 
-    console.info('Sending message', Object.keys(message.data));
+    if (ENABLE_LOGS) console.info('Sending message', Object.keys(message.data));
 
     this.sendTimer = setTimeout(() => {
       if (this.sending) {

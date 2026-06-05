@@ -60,42 +60,6 @@ function setPixel(
   buf[idx + 3] = 255;
 }
 
-function drawBresenhamLine(
-  buf: Uint8Array,
-  w: number,
-  h: number,
-  x0: number,
-  y0: number,
-  x1: number,
-  y1: number,
-  cr: number,
-  cg: number,
-  cb: number,
-) {
-  let dx = Math.abs(x1 - x0);
-  let dy = -Math.abs(y1 - y0);
-  const sx = x0 < x1 ? 1 : -1;
-  const sy = y0 < y1 ? 1 : -1;
-  let err = dx + dy;
-  let cx = Math.round(x0);
-  let cy = Math.round(y0);
-  const ex = Math.round(x1);
-  const ey = Math.round(y1);
-  while (true) {
-    setPixel(buf, w, h, cx, cy, cr, cg, cb);
-    if (cx === ex && cy === ey) break;
-    const e2 = 2 * err;
-    if (e2 >= dy) {
-      err += dy;
-      cx += sx;
-    }
-    if (e2 <= dx) {
-      err += dx;
-      cy += sy;
-    }
-  }
-}
-
 function drawThickLine(
   buf: Uint8Array,
   w: number,
@@ -110,11 +74,32 @@ function drawThickLine(
   thickness: number,
 ) {
   const half = Math.floor(thickness / 2);
-  for (let dy = -half; dy <= half; dy++) {
-    for (let dx = -half; dx <= half; dx++) {
-      if (dx * dx + dy * dy <= half * half) {
-        drawBresenhamLine(buf, w, h, x0 + dx, y0 + dy, x1 + dx, y1 + dy, cr, cg, cb);
+  let dx = Math.abs(x1 - x0);
+  let dy = -Math.abs(y1 - y0);
+  const sx = x0 < x1 ? 1 : -1;
+  const sy = y0 < y1 ? 1 : -1;
+  let err = dx + dy;
+  let cx = Math.round(x0);
+  let cy = Math.round(y0);
+  const ex = Math.round(x1);
+  const ey = Math.round(y1);
+  while (true) {
+    for (let cy2 = -half; cy2 <= half; cy2++) {
+      for (let cx2 = -half; cx2 <= half; cx2++) {
+        if (cx2 * cx2 + cy2 * cy2 <= half * half) {
+          setPixel(buf, w, h, cx + cx2, cy + cy2, cr, cg, cb);
+        }
       }
+    }
+    if (cx === ex && cy === ey) break;
+    const e2 = 2 * err;
+    if (e2 >= dy) {
+      err += dy;
+      cx += sx;
+    }
+    if (e2 <= dx) {
+      err += dx;
+      cy += sy;
     }
   }
 }
@@ -124,20 +109,31 @@ function drawPolyline(
   w: number,
   h: number,
   coords: [number, number][],
+  zoom: number,
   vl: number,
   vt: number,
-  zoom: number,
   cr: number,
   cg: number,
   cb: number,
   thickness: number,
 ) {
-  for (let i = 0; i < coords.length - 1; i++) {
-    const [lng1, lat1] = coords[i];
-    const [lng2, lat2] = coords[i + 1];
-    const p1 = worldPixel(lat1, lng1, zoom);
-    const p2 = worldPixel(lat2, lng2, zoom);
-    drawThickLine(buf, w, h, p1.wx - vl, p1.wy - vt, p2.wx - vl, p2.wy - vt, cr, cg, cb, thickness);
+  if (coords.length < 2) return;
+  let [plng, plat] = coords[0];
+  let pp = worldPixel(plat, plng, zoom);
+  let px = Math.round(pp.wx - vl);
+  let py = Math.round(pp.wy - vt);
+  for (let i = 1; i < coords.length; i++) {
+    const [lng, lat] = coords[i];
+    const p = worldPixel(lat, lng, zoom);
+    const x = Math.round(p.wx - vl);
+    const y = Math.round(p.wy - vt);
+    const onScreen =
+      (px >= 0 && px < w && py >= 0 && py < h) || (x >= 0 && x < w && y >= 0 && y < h);
+    if (onScreen) {
+      drawThickLine(buf, w, h, px, py, x, y, cr, cg, cb, thickness);
+    }
+    px = x;
+    py = y;
   }
 }
 
@@ -341,8 +337,8 @@ export function renderMap(input: RenderInput): Uint8Array {
   if (input.route) {
     const coords = input.route.coordinates;
     if (coords.length > 0) {
-      drawPolyline(buf, width, height, coords, vl, vt, input.zoom, 255, 255, 255, 5);
-      drawPolyline(buf, width, height, coords, vl, vt, input.zoom, 0x33, 0x66, 0xff, 3);
+      drawPolyline(buf, width, height, coords, input.zoom, vl, vt, 255, 255, 255, 5);
+      drawPolyline(buf, width, height, coords, input.zoom, vl, vt, 0x33, 0x66, 0xff, 3);
     }
   }
 

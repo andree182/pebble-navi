@@ -21,6 +21,11 @@ if (typeof _global.fetch === 'undefined') {
         }
       }
       xhr.responseType = 'arraybuffer';
+      xhr.timeout = 10000;
+      xhr.ontimeout = () => {
+        console.error('fetch polyfill');
+        return reject(new Error('fetch polyfill: timeout'));
+      };
       xhr.onload = function () {
         resolve({
           ok: xhr.status >= 200 && xhr.status < 300,
@@ -34,7 +39,10 @@ if (typeof _global.fetch === 'undefined') {
           },
         });
       };
-      xhr.onerror = () => reject(new Error('fetch polyfill: network error'));
+      xhr.onerror = () => {
+        console.error('fetch polyfill');
+        return reject(new Error('fetch polyfill: network error'));
+      };
       xhr.send();
     });
   };

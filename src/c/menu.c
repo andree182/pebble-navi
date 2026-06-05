@@ -8,6 +8,9 @@
 static MenuMode s_mode = MODE_MAP;
 static Layer* s_menu_layer;
 static MenuSendCallback s_send_cb;
+static bool s_has_route;
+static bool s_backlight_on;
+static char s_backlight_label[20];
 
 static int s_selected_index;
 
@@ -17,10 +20,11 @@ static int s_dest_names_received;
 static bool s_collecting_dests;
 static int s_dest_scroll_offset;
 
-static const char* s_main_items[2] = {
-    "Select Destination",
-    "Save Location",
-};
+static void update_backlight_label(void)
+{
+    snprintf(s_backlight_label, sizeof(s_backlight_label),
+             s_backlight_on ? "Backlight: On" : "Backlight: Off");
+}
 
 static void menu_layer_update_proc(Layer* layer, GContext* ctx)
 {
@@ -31,11 +35,30 @@ static void menu_layer_update_proc(Layer* layer, GContext* ctx)
 
     if (s_mode == MODE_MAIN_MENU)
     {
-        int total_h = 2 * ITEM_HEIGHT;
+        int num_items = s_has_route ? 4 : 3;
+        int total_h = num_items * ITEM_HEIGHT;
         int start_y = (bounds.size.h - total_h) / 2;
 
-        for (int i = 0; i < 2; i++)
+        for (int i = 0; i < num_items; i++)
         {
+            const char* text;
+            if (i == 0)
+            {
+                text = "Select Destination";
+            }
+            else if (i == 1)
+            {
+                text = "Save Location";
+            }
+            else if (i == 2)
+            {
+                text = s_backlight_label;
+            }
+            else
+            {
+                text = "Stop Routing";
+            }
+
             GRect item_rect = GRect(0, start_y + i * ITEM_HEIGHT, bounds.size.w, ITEM_HEIGHT);
 
             if (i == s_selected_index)
@@ -49,7 +72,7 @@ static void menu_layer_update_proc(Layer* layer, GContext* ctx)
                 graphics_context_set_text_color(ctx, GColorWhite);
             }
 
-            graphics_draw_text(ctx, s_main_items[i],
+            graphics_draw_text(ctx, text,
                                fonts_get_system_font(FONT_KEY_GOTHIC_18),
                                item_rect, GTextOverflowModeTrailingEllipsis,
                                GTextAlignmentCenter, NULL);
@@ -96,6 +119,9 @@ void menu_init(Layer* parent_layer, MenuSendCallback send_cb)
     s_send_cb = send_cb;
     s_mode = MODE_MAP;
     s_selected_index = 0;
+    s_has_route = false;
+    s_backlight_on = false;
+    update_backlight_label();
     s_collecting_dests = false;
     s_dest_names_total = 0;
     s_dest_names_received = 0;
@@ -109,6 +135,7 @@ void menu_init(Layer* parent_layer, MenuSendCallback send_cb)
 
 void menu_destroy(void)
 {
+    light_enable(false);
     if (s_menu_layer)
     {
         layer_destroy(s_menu_layer);
@@ -128,6 +155,15 @@ void menu_show_main(void)
     s_collecting_dests = false;
     layer_set_hidden(s_menu_layer, false);
     layer_mark_dirty(s_menu_layer);
+}
+
+void menu_set_has_route(bool has_route)
+{
+    s_has_route = has_route;
+    if (s_mode == MODE_MAIN_MENU)
+    {
+        layer_mark_dirty(s_menu_layer);
+    }
 }
 
 void menu_hide(void)
@@ -169,7 +205,7 @@ bool menu_handle_down(void)
     int max_index;
     if (s_mode == MODE_MAIN_MENU)
     {
-        max_index = 1;
+        max_index = s_has_route ? 3 : 2;
     }
     else
     {
@@ -195,9 +231,22 @@ bool menu_handle_select(void)
             if (s_send_cb) s_send_cb(MESSAGE_KEY_REQUEST_DESTINATIONS, 1);
             reset_dest_collection();
         }
-        else
+        else if (s_selected_index == 1)
         {
             if (s_send_cb) s_send_cb(MESSAGE_KEY_SAVE_CURRENT_LOCATION, 1);
+            menu_hide();
+        }
+        else if (s_selected_index == 2)
+        {
+            s_backlight_on = !s_backlight_on;
+            light_enable(s_backlight_on);
+            update_backlight_label();
+            layer_mark_dirty(s_menu_layer);
+        }
+        else
+        {
+            if (s_send_cb) s_send_cb(MESSAGE_KEY_STOP_ROUTING, 1);
+            s_has_route = false;
             menu_hide();
         }
     }

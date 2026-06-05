@@ -14,6 +14,7 @@ void menu_init(Layer* parent_layer, MenuSendCallback send_cb);
 void menu_destroy(void);
 MenuMode menu_get_mode(void);
 void menu_show_main(void);
+void menu_set_has_route(bool has_route);
 void menu_hide(void);
 bool menu_handle_up(void);
 bool menu_handle_down(void);

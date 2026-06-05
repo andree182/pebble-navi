@@ -13,12 +13,13 @@ import {
 } from 'rxjs';
 import { MapState, renderForState, RenderOutput } from './server/stateRenderer';
 import { Destination } from './index';
-import { RouteResult } from './server/routing';
+import { distanceToRoute, RouteResult } from './server/routing';
 import { rleEncode } from './helper';
 import { messageQueue } from './message-queue';
 
 type PartialMapState = Partial<MapState>;
 
+const ENABLE_LOGS = false;
 const DEFAULT_ZOOM = 14;
 const DEFAULT_MODE = 'walking';
 const DEFAULT_CHUNK = 2048;
@@ -28,6 +29,7 @@ export class MapHandler {
   private existingRoute: RouteResult | undefined = undefined;
   private sending = false;
   private rendering = false;
+  private readonly recalcTimes: number[] = [];
   private readonly mapState = new BehaviorSubject<PartialMapState>({});
 
   constructor(destroyApp: Observable<void>) {
@@ -41,7 +43,7 @@ export class MapHandler {
       w = 180;
       h = 180;
     }
-    console.log('Platform=' + info.platform + ' size=' + w + 'x' + h);
+    if (ENABLE_LOGS) console.log('Platform=' + info.platform + ' size=' + w + 'x' + h);
 
     this.mapState
       .pipe(
@@ -58,6 +60,29 @@ export class MapHandler {
         throttleTime(3000, undefined, { leading: true, trailing: true }),
         filter(() => !this.rendering),
         tap(() => (this.rendering = true)),
+        tap((state) => {
+          if (
+            this.existingRoute !== undefined &&
+            state.currentPos !== undefined &&
+            state.dest !== undefined
+          ) {
+            const d = distanceToRoute(
+              state.currentPos.lat,
+              state.currentPos.lng,
+              this.existingRoute.coordinates,
+            );
+            if (d > 100 && this.canRecalc()) {
+              console.log('Off route by ' + Math.round(d) + 'm, recalculating');
+              this.existingRoute = undefined;
+              state.origin = state.currentPos;
+              messageQueue.enqueue(
+                { RECALCULATING: 1 },
+                () => {},
+                (err) => console.error('RECALCULATING send failed: ' + err.error),
+              );
+            }
+          }
+        }),
         switchMap((state) => from(renderForState(state, this.existingRoute))),
         tap(() => (this.rendering = false)),
         tap((output) => this.onMapRendered(output)),
@@ -80,7 +105,7 @@ export class MapHandler {
   }
 
   public updatePosition(pos: GeolocationPosition): void {
-    console.info('updatePosition', JSON.stringify(pos));
+    if (ENABLE_LOGS) console.info('updatePosition', JSON.stringify(pos));
 
     this.mapState.next({
       ...this.mapState.value,
@@ -90,7 +115,7 @@ export class MapHandler {
   }
 
   public selectRoute(destination: Destination): void {
-    console.info('selectRoute', JSON.stringify(destination));
+    if (ENABLE_LOGS) console.info('selectRoute', JSON.stringify(destination));
 
     const state = this.mapState.value;
 
@@ -101,8 +126,12 @@ export class MapHandler {
     });
   }
 
+  public getCurrentPosition(): { lat: number; lng: number } | undefined {
+    return this.mapState.value.currentPos;
+  }
+
   public resetRoute(): void {
-    console.info('resetRoute');
+    if (ENABLE_LOGS) console.info('resetRoute');
 
     this.existingRoute = undefined;
     this.mapState.next({
@@ -113,7 +142,7 @@ export class MapHandler {
   }
 
   public zoom(zoom: number): void {
-    console.info('zoom', zoom);
+    if (ENABLE_LOGS) console.info('zoom', zoom);
 
     const state = this.mapState.value;
 
@@ -124,6 +153,20 @@ export class MapHandler {
       ...state,
       zoom: newZoom,
     });
+  }
+
+  private canRecalc(): boolean {
+    const now = Date.now();
+    const window = 60000;
+    const max = 2;
+    while (this.recalcTimes.length > 0 && this.recalcTimes[0] < now - window) {
+      this.recalcTimes.shift();
+    }
+    if (this.recalcTimes.length >= max) {
+      return false;
+    }
+    this.recalcTimes.push(now);
+    return true;
   }
 
   private onMapRendered(renderOutput: RenderOutput): void {
@@ -142,21 +185,22 @@ export class MapHandler {
     const chunkSize = this.chunk_size;
     const compressed = rleEncode(pixels);
     const totalChunks = Math.ceil(compressed.length / chunkSize);
-    console.log(
-      'sendBitmapToWatch: pixels=' +
-        pixels.length +
-        ' bytes, compressed=' +
-        compressed.length +
-        ', chunks=' +
-        totalChunks,
-    );
+    if (ENABLE_LOGS)
+      console.log(
+        'sendBitmapToWatch: pixels=' +
+          pixels.length +
+          ' bytes, compressed=' +
+          compressed.length +
+          ', chunks=' +
+          totalChunks,
+      );
 
     const MAX_RETRIES = 3;
 
     const sendChunk = (index: number, retries: number = MAX_RETRIES): void => {
       if (index >= totalChunks) {
         this.sending = false;
-        console.log('Finished sending chunk ' + totalChunks);
+        if (ENABLE_LOGS) console.log('Finished sending chunk ' + totalChunks);
         return;
       }
 
@@ -167,7 +211,8 @@ export class MapHandler {
         bytes.push(compressed[i]);
       }
 
-      console.log('Sending chunk ' + index + '/' + totalChunks + ' (' + bytes.length + ' bytes)');
+      if (ENABLE_LOGS)
+        console.log('Sending chunk ' + index + '/' + totalChunks + ' (' + bytes.length + ' bytes)');
 
       messageQueue.enqueue(
         {
@@ -177,13 +222,16 @@ export class MapHandler {
         },
         () => {
           sendChunk(index + 1);
-          console.log('Chunk ' + index + ' acked');
+          if (ENABLE_LOGS) console.log('Chunk ' + index + ' acked');
         },
         (err: any) => {
           console.error('Chunk ' + index + ' failed: ' + JSON.stringify(err.error));
           if (retries > 0) {
             const delay = (MAX_RETRIES - retries + 1) * 1000;
-            console.log('Retrying chunk ' + index + ' in ' + delay + 'ms (' + retries + ' retries left)');
+            if (ENABLE_LOGS)
+              console.log(
+                'Retrying chunk ' + index + ' in ' + delay + 'ms (' + retries + ' retries left)',
+              );
             setTimeout(() => sendChunk(index, retries - 1), delay);
           } else {
             console.error('Giving up on chunk ' + index + ' after ' + MAX_RETRIES + ' retries');
@@ -201,7 +249,7 @@ export class MapHandler {
 
     const dict: Record<string, any> = {
       ROUTE_DISTANCE: Math.round(output.route.distance),
-      ROUTE_DURATION: Math.round(output.route.duration / 60),
+      ROUTE_DURATION: Math.round(output.route.duration) / 60,
     };
 
     const ns = output.nextStep;

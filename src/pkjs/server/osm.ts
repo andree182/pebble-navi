@@ -31,35 +31,3 @@ export async function getTile(z: number, x: number, y: number): Promise<Uint8Arr
     return null;
   }
 }
-
-export function tryParseLatLng(s: string): { lat: number; lng: number } | null {
-  const parts = s.split(',').map((p) => p.trim());
-  if (parts.length === 2) {
-    const lat = parseFloat(parts[0]);
-    const lng = parseFloat(parts[1]);
-    if (!isNaN(lat) && !isNaN(lng)) return { lat, lng };
-  }
-  return null;
-}
-
-export async function geocode(query: string): Promise<{ lat: number; lng: number } | null> {
-  const cached = getCachedGeocode(query);
-  if (cached) return cached;
-
-  const url = `https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(query)}`;
-  try {
-    const res = await fetch(url, { headers: { 'User-Agent': UA } });
-
-    if (!res.ok) return null;
-    const data: any[] = (await res.json()) as any[];
-    if (!data.length) return null;
-    const coords = {
-      lat: parseFloat(data[0].lat as string),
-      lng: parseFloat(data[0].lon as string),
-    };
-    setCachedGeocode(query, coords);
-    return coords;
-  } catch {
-    return null;
-  }
-}

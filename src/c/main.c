@@ -26,7 +26,7 @@ static void try_flush_pending(void)
 
 static void inbox_received(DictionaryIterator* iter, void* ctx)
 {
-    APP_LOG(APP_LOG_LEVEL_DEBUG, "Received AppMessage");
+    //APP_LOG(APP_LOG_LEVEL_DEBUG, "Received AppMessage");
 
     if (!s_js_ready)
     {
@@ -39,16 +39,23 @@ static void inbox_received(DictionaryIterator* iter, void* ctx)
     if (navigation_handle_message(iter)) return;
     if (menu_handle_message(iter)) return;
 
+    if (dict_find(iter, MESSAGE_KEY_RECALCULATING))
+    {
+        text_layer_set_text(s_route_summary_layer, "Recalculating...");
+        return;
+    }
+
     Tuple* dist = dict_find(iter, MESSAGE_KEY_ROUTE_DISTANCE);
     Tuple* dur = dict_find(iter, MESSAGE_KEY_ROUTE_DURATION);
     if (dist && dur)
     {
+        menu_set_has_route(true);
         static char summary[32];
         int d = dist->value->int32;
         int m = dur->value->int32;
         if (d >= 1000)
         {
-            snprintf(summary, sizeof(summary), "%.1f km  %d min", d / 1000.0, m);
+            snprintf(summary, sizeof(summary), "%d.%d km  %d min", (int)(d / 1000.0), (d % 1000) / 100 , m);
         }
         else
         {
