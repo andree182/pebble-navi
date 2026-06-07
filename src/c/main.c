@@ -144,14 +144,21 @@ static void main_window_load(Window* window)
     s_map_layer = navigation_create_map_layer(bounds);
     layer_add_child(window_layer, s_map_layer);
 
-    s_next_step_layer = text_layer_create(GRect(0, bounds.size.h - 36, bounds.size.w, 18));
+
+#ifdef PBL_PLATFORM_GABBRO
+#define OFFSET 30
+#else
+#define OFFSET 0
+#endif
+
+    s_next_step_layer = text_layer_create(GRect(0, bounds.size.h - 36 - OFFSET, bounds.size.w, 18));
     text_layer_set_background_color(s_next_step_layer, GColorBlack);
     text_layer_set_text_color(s_next_step_layer, GColorWhite);
     text_layer_set_font(s_next_step_layer, fonts_get_system_font(FONT_KEY_GOTHIC_14));
     text_layer_set_text_alignment(s_next_step_layer, GTextAlignmentCenter);
     layer_add_child(window_layer, text_layer_get_layer(s_next_step_layer));
 
-    s_route_summary_layer = text_layer_create(GRect(0, bounds.size.h - 18, bounds.size.w, 18));
+    s_route_summary_layer = text_layer_create(GRect(0, bounds.size.h - 18 - OFFSET, bounds.size.w, 18));
     text_layer_set_background_color(s_route_summary_layer, GColorBlack);
     text_layer_set_text_color(s_route_summary_layer, GColorWhite);
     text_layer_set_font(s_route_summary_layer, fonts_get_system_font(FONT_KEY_GOTHIC_14));

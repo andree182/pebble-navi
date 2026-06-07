@@ -81,31 +81,59 @@ static void map_update_proc(Layer* layer, GContext* ctx)
 
     GRect bounds = layer_get_bounds(layer);
     int icon_size = 22;
-    int margin = 0;
 
+#ifdef PBL_PLATFORM_GABBRO
+#define MARGINE 4
+#define ROUND_FIX 35
     graphics_context_set_fill_color(ctx, GColorBulgarianRose);
-    graphics_fill_rect(ctx, GRect(margin, margin, 44, 20), icon_size / 2, GCornerBottomRight);
+    graphics_fill_rect(ctx, GRect(ROUND_FIX + MARGINE, ROUND_FIX + MARGINE, 44, 20), icon_size / 2, GCornersAll);
     graphics_context_set_text_color(ctx, GColorWhite);
-    graphics_draw_text(ctx, s_time_text, fonts_get_system_font(FONT_KEY_GOTHIC_18_BOLD), GRect(margin, margin - 2, 44, 20), GTextOverflowModeTrailingEllipsis, GTextAlignmentCenter, NULL);
+    graphics_draw_text(ctx, s_time_text, fonts_get_system_font(FONT_KEY_GOTHIC_18_BOLD), GRect(ROUND_FIX + MARGINE, ROUND_FIX - 2 + MARGINE, 44, 20), GTextOverflowModeTrailingEllipsis, GTextAlignmentCenter, NULL);
 
-    GRect plus_rect = GRect(bounds.size.w - icon_size - margin, margin, icon_size, icon_size);
+    GRect plus_rect = GRect(bounds.size.w - icon_size - ROUND_FIX - MARGINE + 24, ROUND_FIX + MARGINE + 30, icon_size, icon_size);
+    graphics_context_set_fill_color(ctx, GColorBulgarianRose);
+    graphics_fill_rect(ctx, plus_rect, icon_size / 2, GCornersAll);
+    graphics_context_set_text_color(ctx, GColorWhite);
+    graphics_draw_text(ctx, "+", fonts_get_system_font(FONT_KEY_GOTHIC_18_BOLD), GRect(plus_rect.origin.x, plus_rect.origin.y - 2, plus_rect.size.w, plus_rect.size.h), GTextOverflowModeTrailingEllipsis, GTextAlignmentCenter, NULL);
+
+    GRect minus_rect = GRect(bounds.size.w - icon_size - ROUND_FIX - MARGINE + 24, bounds.size.h - ROUND_FIX - MARGINE - icon_size - 30, icon_size, icon_size);
+    graphics_context_set_fill_color(ctx, GColorBulgarianRose);
+    graphics_fill_rect(ctx, minus_rect, icon_size / 2, GCornersAll);
+    graphics_context_set_text_color(ctx, GColorWhite);
+    graphics_draw_text(ctx, "-", fonts_get_system_font(FONT_KEY_GOTHIC_18_BOLD), GRect(minus_rect.origin.x, minus_rect.origin.y - 2, minus_rect.size.w, minus_rect.size.h), GTextOverflowModeTrailingEllipsis, GTextAlignmentCenter, NULL);
+
+    GPoint gear_center = GPoint(bounds.size.w - icon_size / 2 - MARGINE, (bounds.size.h / 2) + 1);
+    GRect gear_rect = GRect(gear_center.x - icon_size / 2 - MARGINE, gear_center.y - icon_size / 2, icon_size, icon_size);
+    graphics_context_set_fill_color(ctx, GColorBulgarianRose);
+    graphics_fill_rect(ctx, gear_rect, icon_size / 2, GCornersAll);
+    graphics_context_set_text_color(ctx, GColorWhite);
+    graphics_draw_text(ctx, "*", fonts_get_system_font(FONT_KEY_GOTHIC_18_BOLD), GRect(gear_rect.origin.x, gear_rect.origin.y, gear_rect.size.w, gear_rect.size.h), GTextOverflowModeTrailingEllipsis, GTextAlignmentCenter, NULL);
+#else
+#define MARGINE 0
+    graphics_context_set_fill_color(ctx, GColorBulgarianRose);
+    graphics_fill_rect(ctx, GRect(MARGINE, MARGINE, 44, 20), icon_size / 2, GCornerBottomRight);
+    graphics_context_set_text_color(ctx, GColorWhite);
+    graphics_draw_text(ctx, s_time_text, fonts_get_system_font(FONT_KEY_GOTHIC_18_BOLD), GRect(MARGINE, MARGINE - 2, 44, 20), GTextOverflowModeTrailingEllipsis, GTextAlignmentCenter, NULL);
+
+    GRect plus_rect = GRect(bounds.size.w - icon_size - MARGINE, MARGINE, icon_size, icon_size);
     graphics_context_set_fill_color(ctx, GColorBulgarianRose);
     graphics_fill_rect(ctx, plus_rect, icon_size / 2, GCornerBottomLeft);
     graphics_context_set_text_color(ctx, GColorWhite);
     graphics_draw_text(ctx, "+", fonts_get_system_font(FONT_KEY_GOTHIC_18_BOLD), GRect(plus_rect.origin.x, plus_rect.origin.y - 2, plus_rect.size.w, plus_rect.size.h), GTextOverflowModeTrailingEllipsis, GTextAlignmentCenter, NULL);
 
-    GRect minus_rect = GRect(bounds.size.w - icon_size - margin, bounds.size.h - 36 - icon_size - margin, icon_size, icon_size);
+    GRect minus_rect = GRect(bounds.size.w - icon_size - MARGINE, bounds.size.h - 36 - icon_size - MARGINE, icon_size, icon_size);
     graphics_context_set_fill_color(ctx, GColorBulgarianRose);
     graphics_fill_rect(ctx, minus_rect, icon_size / 2, GCornerTopLeft);
     graphics_context_set_text_color(ctx, GColorWhite);
     graphics_draw_text(ctx, "-", fonts_get_system_font(FONT_KEY_GOTHIC_18_BOLD), GRect(minus_rect.origin.x, minus_rect.origin.y - 2, minus_rect.size.w, minus_rect.size.h), GTextOverflowModeTrailingEllipsis, GTextAlignmentCenter, NULL);
 
-    GPoint gear_center = GPoint(bounds.size.w - icon_size / 2 - margin, (bounds.size.h - 36) / 2);
+    GPoint gear_center = GPoint(bounds.size.w - icon_size / 2 - MARGINE, (bounds.size.h - 36) / 2);
     GRect gear_rect = GRect(gear_center.x - icon_size / 2, gear_center.y - icon_size / 2, icon_size, icon_size);
     graphics_context_set_fill_color(ctx, GColorBulgarianRose);
-    graphics_fill_rect(ctx, gear_rect, icon_size / 2, GCornersLeft );
+    graphics_fill_rect(ctx, gear_rect, icon_size / 2, GCornersLeft);
     graphics_context_set_text_color(ctx, GColorWhite);
     graphics_draw_text(ctx, "*", fonts_get_system_font(FONT_KEY_GOTHIC_18_BOLD), GRect(gear_rect.origin.x, gear_rect.origin.y, gear_rect.size.w, gear_rect.size.h), GTextOverflowModeTrailingEllipsis, GTextAlignmentCenter, NULL);
+#endif
 }
 
 static void init_default_palette(void)
