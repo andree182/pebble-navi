@@ -144,19 +144,19 @@ static void main_window_load(Window* window)
     s_map_layer = navigation_create_map_layer(bounds);
     layer_add_child(window_layer, s_map_layer);
 
-    s_route_summary_layer = text_layer_create(GRect(0, bounds.size.h - 36, bounds.size.w, 18));
-    text_layer_set_background_color(s_route_summary_layer, GColorBlack);
-    text_layer_set_text_color(s_route_summary_layer, GColorWhite);
-    text_layer_set_font(s_route_summary_layer, fonts_get_system_font(FONT_KEY_GOTHIC_14));
-    text_layer_set_text_alignment(s_route_summary_layer, GTextAlignmentCenter);
-    layer_add_child(window_layer, text_layer_get_layer(s_route_summary_layer));
-
-    s_next_step_layer = text_layer_create(GRect(0, bounds.size.h - 18, bounds.size.w, 18));
+    s_next_step_layer = text_layer_create(GRect(0, bounds.size.h - 36, bounds.size.w, 18));
     text_layer_set_background_color(s_next_step_layer, GColorBlack);
     text_layer_set_text_color(s_next_step_layer, GColorWhite);
     text_layer_set_font(s_next_step_layer, fonts_get_system_font(FONT_KEY_GOTHIC_14));
     text_layer_set_text_alignment(s_next_step_layer, GTextAlignmentCenter);
     layer_add_child(window_layer, text_layer_get_layer(s_next_step_layer));
+
+    s_route_summary_layer = text_layer_create(GRect(0, bounds.size.h - 18, bounds.size.w, 18));
+    text_layer_set_background_color(s_route_summary_layer, GColorBlack);
+    text_layer_set_text_color(s_route_summary_layer, GColorWhite);
+    text_layer_set_font(s_route_summary_layer, fonts_get_system_font(FONT_KEY_GOTHIC_14));
+    text_layer_set_text_alignment(s_route_summary_layer, GTextAlignmentCenter);
+    layer_add_child(window_layer, text_layer_get_layer(s_route_summary_layer));
 
     window_set_click_config_provider(window, click_config_provider);
 
@@ -205,16 +205,15 @@ static void init()
     app_message_register_outbox_failed(outbox_failed);
     app_message_register_outbox_sent(outbox_sent);
 
-    app_message_open(app_message_inbox_size_maximum()
-, app_message_outbox_size_maximum());
+    app_message_open(4096, 1024);
 
     window_stack_push(s_main_window, true);
 }
 
 static void deinit()
 {
-    menu_destroy();
     window_destroy(s_main_window);
+    menu_destroy();
 }
 
 int main(void)

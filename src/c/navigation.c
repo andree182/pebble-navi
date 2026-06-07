@@ -1,25 +1,26 @@
 #include <pebble.h>
 #include "navigation.h"
 
-#define MAX_BITMAP_DATA_SIZE  50000
-static unsigned int s_chunk_size;
-
 //#define DEBUG_PNG
 
-#if defined(PBL_PLATFORM_EMERY)
+#if defined(PBL_PLATFORM_GABBRO)
+#define SCREEN_W 260
+#define SCREEN_H 260
+#elif defined(PBL_PLATFORM_EMERY)
 #define SCREEN_W 200
 #define SCREEN_H 228
-#elif defined(PBL_PLATFORM_CHALK)
-#define SCREEN_W 180
-#define SCREEN_H 180
 #else
 #define SCREEN_W 144
 #define SCREEN_H 168
 #endif
 
+#define MAX_BITMAP_DATA_SIZE  SCREEN_W * SCREEN_H
+
+static unsigned int s_chunk_size;
+
 static Layer* s_map_layer;
 static GBitmap* s_bitmap;
-static uint8_t s_bitmap_data[MAX_BITMAP_DATA_SIZE];
+static uint8_t* s_bitmap_data;
 static char s_time_text[6];
 static int s_chunks_received = 0;
 static int s_decompressed_offset = 0;
@@ -35,7 +36,7 @@ static int s_palette_received = 1;
 
 static void apply_palette(GBitmap* bmp)
 {
-    GColor8* pal = (GColor8*)malloc(64 * sizeof(GColor8));
+    GColor8* pal = malloc(64 * sizeof(GColor8));
     if (!pal) return;
     if (s_palette_received)
     {
@@ -175,16 +176,11 @@ static int rle_decode_chunk(const uint8_t* in, int in_len, uint8_t* out, int out
 void navigation_init(void)
 {
     init_default_palette();
-    unsigned int max_inbox = app_message_inbox_size_maximum();
-    s_chunk_size = max_inbox - 32;
-    if (s_chunk_size > MAX_BITMAP_DATA_SIZE)
-    {
-        s_chunk_size = MAX_BITMAP_DATA_SIZE;
-    }
+    s_chunk_size = 2048;
     time_t now = time(NULL);
     time_tick_handler(localtime(&now), MINUTE_UNIT);
     tick_timer_service_subscribe(MINUTE_UNIT, time_tick_handler);
-    APP_LOG(APP_LOG_LEVEL_INFO, "Chunk size set to %d (max_inbox=%d)", s_chunk_size, max_inbox);
+    APP_LOG(APP_LOG_LEVEL_INFO, "Chunk size set to %d", s_chunk_size);
 }
 
 int navigation_get_chunk_size(void)
@@ -197,6 +193,19 @@ Layer* navigation_create_map_layer(GRect bounds)
     s_bitmap_width = bounds.size.w;
     s_bitmap_height = bounds.size.h;
     s_bitmap_data_size = s_bitmap_width * s_bitmap_height;
+    if (s_bitmap_data_size > MAX_BITMAP_DATA_SIZE) {
+        s_bitmap_data_size = MAX_BITMAP_DATA_SIZE;
+    }
+
+    s_bitmap = gbitmap_create_blank(GSize(s_bitmap_width, s_bitmap_height), GBitmapFormat8Bit);
+    if (!s_bitmap) {
+        APP_LOG(APP_LOG_LEVEL_ERROR, "Failed to create GBitmap!");
+    } else {
+        s_bitmap_data = gbitmap_get_data(s_bitmap);
+        if (!s_bitmap_data) {
+            APP_LOG(APP_LOG_LEVEL_ERROR, "Failed to get GBitmap data");
+        }
+    }
 
     s_map_layer = layer_create(bounds);
     layer_set_update_proc(s_map_layer, map_update_proc);
@@ -210,6 +219,7 @@ void navigation_destroy_map_layer(void)
         gbitmap_destroy(s_bitmap);
         s_bitmap = NULL;
     }
+    s_bitmap_data = NULL;
     if (s_map_layer)
     {
         layer_destroy(s_map_layer);
@@ -231,9 +241,12 @@ bool navigation_handle_message(DictionaryIterator* iter)
             s_decompressed_offset = 0;
             s_rle_state = 0;
             s_rle_run_count = 0;
-#ifdef DEBUG_PNG
-            APP_LOG(APP_LOG_LEVEL_INFO, "Bitmap transfer starting, total=%lu", total->value->uint32);
-#endif
+        }
+
+        if (!s_bitmap_data)
+        {
+            APP_LOG(APP_LOG_LEVEL_ERROR, "Bitmap data buffer not allocated");
+            return true;
         }
 #ifdef DEBUG_PNG
         int chunk_index = idx->value->uint32;
@@ -251,24 +264,6 @@ bool navigation_handle_message(DictionaryIterator* iter)
 #ifdef DEBUG_PNG
             APP_LOG(APP_LOG_LEVEL_INFO, "All %d chunks received, updating bitmap", s_chunks_received);
 #endif
-
-            if (!s_bitmap)
-            {
-                s_bitmap = gbitmap_create_blank(GSize(s_bitmap_width, s_bitmap_height), GBitmapFormat8Bit);
-                if (!s_bitmap)
-                {
-                    APP_LOG(APP_LOG_LEVEL_ERROR, "Failed to create GBitmap!");
-                    return true;
-                }
-            }
-            uint8_t* raw = gbitmap_get_data(s_bitmap);
-            if (raw)
-            {
-                memcpy(raw, s_bitmap_data, s_bitmap_data_size);
-#ifdef DEBUG_PNG
-                APP_LOG(APP_LOG_LEVEL_INFO, "Bitmap data copied (%d bytes)", s_bitmap_data_size);
-#endif
-            }
             apply_palette(s_bitmap);
             layer_mark_dirty(s_map_layer);
 #ifdef DEBUG_PNG
