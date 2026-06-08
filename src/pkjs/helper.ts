@@ -1,6 +1,15 @@
 import { Destination } from './index';
 
 const DESTINATIONS_KEY = 'destinations';
+const UNITS_KEY = 'units';
+
+export function loadUnits(): string {
+  return localStorage.getItem(UNITS_KEY) || 'metric';
+}
+
+export function saveUnits(units: string): void {
+  localStorage.setItem(UNITS_KEY, units);
+}
 
 export function loadDestinations(): Destination[] {
   try {

@@ -13,7 +13,7 @@ import {
 import { MapState, renderForState, RenderOutput } from './server/stateRenderer';
 import { Destination } from './index';
 import { distanceToRoute, RouteResult } from './server/routing';
-import { asciiNormalize, rleEncode } from './helper';
+import { asciiNormalize, loadUnits, rleEncode } from './helper';
 import { messageQueue } from './message-queue';
 
 type PartialMapState = Partial<MapState>;
@@ -264,22 +264,33 @@ export class MapHandler {
 
   private sendRouteToWatch(output: RenderOutput): void {
     const dict: Record<string, any> = {};
+    const units = loadUnits();
+
     if (!output.route) {
       dict.NAV_INFO_LINE1 = 'Select a Destination';
       dict.NAV_INFO_LINE2 = 'Add new Destinations in App Settings';
       dict.ROUTE_ACTIVE = 0;
     } else {
-      const d = Math.round(output.route.distance);
+      const d = output.route.distance;
       const m = Math.round(output.route.duration / 60);
       const h = Math.floor(m / 60);
       const mins = m % 60;
       const time = h > 0 ? (mins > 0 ? `${h} h ${mins} min` : `${h} h`) : `${m} min`;
-      dict.NAV_INFO_LINE1 = d >= 1000 ? `${(d / 1000).toFixed(1)} km  ${time}` : `${d} m  ${time}`;
+
+      if (units === 'imperial') {
+        const mi = d / 1609.344;
+        dict.NAV_INFO_LINE1 = mi >= 0.1 ? `${mi.toFixed(1)} mi  ${time}` : `${Math.round(d / 0.3048)} ft  ${time}`;
+      } else {
+        dict.NAV_INFO_LINE1 = d >= 1000 ? `${(d / 1000).toFixed(1)} km  ${time}` : `${Math.round(d)} m  ${time}`;
+      }
       dict.ROUTE_ACTIVE = 1;
 
       const ns = output.nextStep;
       if (ns && Math.round(ns.remainingDist) > 0) {
-        dict.NAV_INFO_LINE2 = `${ns.step.modifier || ''} ${asciiNormalize(ns.step.name) || ''} (${Math.round(ns.remainingDist)} m)`;
+        const stepDist = units === 'imperial'
+          ? `${Math.round(ns.remainingDist / 0.3048)} ft`
+          : `${Math.round(ns.remainingDist)} m`;
+        dict.NAV_INFO_LINE2 = `${ns.step.modifier || ''} ${asciiNormalize(ns.step.name) || ''} (${stepDist})`;
       } else {
         dict.NAV_INFO_LINE2 = '';
       }
