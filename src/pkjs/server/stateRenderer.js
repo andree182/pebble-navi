@@ -42,10 +42,10 @@ var osm_js_1 = require("./osm.js");
 var routing_js_1 = require("./routing.js");
 var renderer_js_1 = require("./renderer.js");
 var pebble_palette_js_1 = require("./pebble-palette.js");
-exports.USER_Y_OFFSET = 180;
+exports.USER_Y_OFFSET = 0.85;
 function renderForState(s, existingRoute, isFlint) {
     return __awaiter(this, void 0, void 0, function () {
-        var center, route, _a, _b, nextStep, ns, mapRotation, renderW, renderH, rad, cosA, sinA, centerPx, vl, vt, tx0, ty0, tx1, ty1, tilePromises, _loop_1, tx, tileResults, tiles, rgba, pixels;
+        var center, route, _a, _b, nextStep, ns, mapRotation, outUserOffsetY, renderW, renderH, cosA, sinA, maxDY, centerPx, vl, vt, tx0, ty0, tx1, ty1, tilePromises, _loop_1, tx, tileResults, tiles, rgba, pixels;
         var _c;
         return __generator(this, function (_d) {
             switch (_d.label) {
@@ -81,22 +81,18 @@ function renderForState(s, existingRoute, isFlint) {
                             mapRotation = -s.bearing;
                         }
                     }
+                    outUserOffsetY = mapRotation != null ? s.width * exports.USER_Y_OFFSET : undefined;
                     renderW = s.width, renderH = s.height;
                     if (mapRotation != null) {
-                        rad = Math.abs((mapRotation * Math.PI) / 180);
-                        cosA = Math.abs(Math.cos(rad));
-                        sinA = Math.abs(Math.sin(rad));
-                        renderW = Math.ceil(s.width * cosA + s.height * sinA) + 1;
-                        renderH = Math.ceil(s.width * sinA + s.height * cosA) + 1;
+                        cosA = Math.abs(Math.cos((mapRotation * Math.PI) / 180));
+                        sinA = Math.abs(Math.sin((mapRotation * Math.PI) / 180));
+                        maxDY = outUserOffsetY != null ? Math.max(outUserOffsetY, s.height - outUserOffsetY) : s.height / 2;
+                        renderW = Math.ceil(s.width * cosA + 2 * maxDY * sinA) + 1;
+                        renderH = Math.ceil(s.width * sinA + 2 * maxDY * cosA) + 1;
                     }
                     centerPx = (0, osm_js_1.worldPixel)(center.lat, center.lng, s.zoom);
                     vl = centerPx.wx - renderW / 2;
-                    vt = centerPx.wy -
-                        (mapRotation != null
-                            ? renderH / 2
-                            : s.currentPos && exports.USER_Y_OFFSET
-                                ? exports.USER_Y_OFFSET
-                                : s.height / 2);
+                    vt = centerPx.wy - renderH / 2;
                     tx0 = Math.floor(vl / osm_js_1.TILE_SIZE);
                     ty0 = Math.floor(vt / osm_js_1.TILE_SIZE);
                     tx1 = Math.floor((vl + renderW - 1) / osm_js_1.TILE_SIZE);
@@ -122,6 +118,7 @@ function renderForState(s, existingRoute, isFlint) {
                         height: renderH,
                         outputWidth: mapRotation != null ? s.width : undefined,
                         outputHeight: mapRotation != null ? s.height : undefined,
+                        outputUserOffsetY: outUserOffsetY,
                         zoom: s.zoom,
                         center: center,
                         start: s.origin,
@@ -130,7 +127,7 @@ function renderForState(s, existingRoute, isFlint) {
                         bearing: s.bearing,
                         route: route,
                         tiles: tiles,
-                        userOffsetY: mapRotation != null ? renderH / 2 - exports.USER_Y_OFFSET : undefined,
+                        userOffsetY: renderH / 2,
                         rotation: mapRotation,
                     });
                     pixels = isFlint

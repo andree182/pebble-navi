@@ -268,22 +268,24 @@ function renderMapNormal(input) {
     return buf;
 }
 function renderMapRotated(input) {
-    var _a, _b;
+    var _a, _b, _c;
     var outW = (_a = input.outputWidth) !== null && _a !== void 0 ? _a : input.width;
     var outH = (_b = input.outputHeight) !== null && _b !== void 0 ? _b : input.height;
     var rotRad = (input.rotation * Math.PI) / 180;
-    var absRad = Math.abs(rotRad);
-    var cosA = Math.abs(Math.cos(absRad));
-    var sinA = Math.abs(Math.sin(absRad));
-    var expW = Math.ceil(outW * cosA + outH * sinA) + 1;
-    var expH = Math.ceil(outW * sinA + outH * cosA) + 1;
+    var cosA = Math.abs(Math.cos(rotRad));
+    var sinA = Math.abs(Math.sin(rotRad));
+    var outCY = (_c = input.outputUserOffsetY) !== null && _c !== void 0 ? _c : outH / 2;
+    var maxDY = input.outputUserOffsetY != null
+        ? Math.max(input.outputUserOffsetY, outH - input.outputUserOffsetY)
+        : outH / 2;
+    var expW = Math.ceil(outW * cosA + 2 * maxDY * sinA) + 1;
+    var expH = Math.ceil(outW * sinA + 2 * maxDY * cosA) + 1;
     var unrotated = renderMapNormal(__assign(__assign({}, input), { width: expW, height: expH, userOffsetY: expH / 2, rotation: undefined }));
     var cosR = Math.cos(rotRad);
     var sinR = Math.sin(rotRad);
     var expCX = expW / 2;
     var expCY = expH / 2;
     var outCX = outW / 2;
-    var outCY = outH / 2;
     var buf = new Uint8Array(outW * outH * 4);
     var bgR = 0xf8, bgG = 0xf8, bgB = 0xf8;
     for (var y = 0; y < outH; y++) {

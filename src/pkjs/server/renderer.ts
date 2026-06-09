@@ -17,6 +17,7 @@ export interface RenderInput {
   rotation?: number;
   outputWidth?: number;
   outputHeight?: number;
+  outputUserOffsetY?: number;
 }
 
 function fillRect(
@@ -398,11 +399,14 @@ function renderMapRotated(input: RenderInput): Uint8Array {
   const outH = input.outputHeight ?? input.height;
   const rotRad = (input.rotation! * Math.PI) / 180;
 
-  const absRad = Math.abs(rotRad);
-  const cosA = Math.abs(Math.cos(absRad));
-  const sinA = Math.abs(Math.sin(absRad));
-  const expW = Math.ceil(outW * cosA + outH * sinA) + 1;
-  const expH = Math.ceil(outW * sinA + outH * cosA) + 1;
+  const cosA = Math.abs(Math.cos(rotRad));
+  const sinA = Math.abs(Math.sin(rotRad));
+  const outCY = input.outputUserOffsetY ?? outH / 2;
+  const maxDY = input.outputUserOffsetY != null
+    ? Math.max(input.outputUserOffsetY, outH - input.outputUserOffsetY)
+    : outH / 2;
+  const expW = Math.ceil(outW * cosA + 2 * maxDY * sinA) + 1;
+  const expH = Math.ceil(outW * sinA + 2 * maxDY * cosA) + 1;
 
   const unrotated = renderMapNormal({
     ...input,
@@ -417,7 +421,6 @@ function renderMapRotated(input: RenderInput): Uint8Array {
   const expCX = expW / 2;
   const expCY = expH / 2;
   const outCX = outW / 2;
-  const outCY = outH / 2;
   const buf = new Uint8Array(outW * outH * 4);
   const bgR = 0xf8, bgG = 0xf8, bgB = 0xf8;
 

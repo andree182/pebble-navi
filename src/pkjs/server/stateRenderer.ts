@@ -9,7 +9,7 @@ import {
 import { renderMap } from './renderer.js';
 import { quantizeToPebble, quantizeToPebble2Bit } from './pebble-palette.js';
 
-export const USER_Y_OFFSET = 180;
+export const USER_Y_OFFSET = 0.85;
 
 export interface MapState {
   currentPos: { lat: number; lng: number };
@@ -58,25 +58,22 @@ export async function renderForState(
     }
   }
 
+  const outUserOffsetY = mapRotation != null ? s.width * USER_Y_OFFSET : undefined;
+
   let renderW = s.width,
     renderH = s.height;
   if (mapRotation != null) {
-    const rad = Math.abs((mapRotation * Math.PI) / 180);
-    const cosA = Math.abs(Math.cos(rad));
-    const sinA = Math.abs(Math.sin(rad));
-    renderW = Math.ceil(s.width * cosA + s.height * sinA) + 1;
-    renderH = Math.ceil(s.width * sinA + s.height * cosA) + 1;
+    const cosA = Math.abs(Math.cos((mapRotation * Math.PI) / 180));
+    const sinA = Math.abs(Math.sin((mapRotation * Math.PI) / 180));
+    const maxDY =
+      outUserOffsetY != null ? Math.max(outUserOffsetY, s.height - outUserOffsetY) : s.height / 2;
+    renderW = Math.ceil(s.width * cosA + 2 * maxDY * sinA) + 1;
+    renderH = Math.ceil(s.width * sinA + 2 * maxDY * cosA) + 1;
   }
 
   const centerPx = worldPixel(center.lat, center.lng, s.zoom);
   const vl = centerPx.wx - renderW / 2;
-  const vt =
-    centerPx.wy -
-    (mapRotation != null
-      ? renderH / 2
-      : s.currentPos && USER_Y_OFFSET
-        ? USER_Y_OFFSET
-        : s.height / 2);
+  const vt = centerPx.wy - renderH / 2;
 
   const tx0 = Math.floor(vl / TILE_SIZE);
   const ty0 = Math.floor(vt / TILE_SIZE);
@@ -101,6 +98,7 @@ export async function renderForState(
     height: renderH,
     outputWidth: mapRotation != null ? s.width : undefined,
     outputHeight: mapRotation != null ? s.height : undefined,
+    outputUserOffsetY: outUserOffsetY,
     zoom: s.zoom,
     center,
     start: s.origin,
@@ -109,7 +107,7 @@ export async function renderForState(
     bearing: s.bearing,
     route,
     tiles,
-    userOffsetY: mapRotation != null ? renderH / 2 - USER_Y_OFFSET : undefined,
+    userOffsetY: renderH / 2,
     rotation: mapRotation,
   });
 
