@@ -22,6 +22,8 @@ void menu_destroy(void);
 MenuMode menu_get_mode(void);
 void menu_show_main(void);
 void menu_set_has_route(bool has_route);
+void menu_set_route_mode(RouteMode mode);
+void menu_set_rotation_mode(bool enabled);
 void menu_hide(void);
 bool menu_handle_up(void);
 bool menu_handle_down(void);

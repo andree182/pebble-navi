@@ -2,6 +2,27 @@ import { Destination } from './index';
 
 const DESTINATIONS_KEY = 'destinations';
 const UNITS_KEY = 'units';
+const SETTINGS_KEY = 'nav_settings';
+
+export interface NavSettings {
+  zoom: number;
+  mode: string;
+  rotationMode: boolean;
+}
+
+export function loadSettings(): NavSettings {
+  try {
+    const saved = localStorage.getItem(SETTINGS_KEY);
+    if (saved) {
+      return JSON.parse(saved);
+    }
+  } catch (e) {}
+  return { zoom: 16, mode: 'walking', rotationMode: false };
+}
+
+export function saveSettings(settings: NavSettings): void {
+  localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
+}
 
 export function loadUnits(): string {
   return localStorage.getItem(UNITS_KEY) || 'metric';
@@ -18,7 +39,13 @@ export function loadDestinations(): Destination[] {
       return JSON.parse(saved);
     }
   } catch (e) {}
-  return [];
+  return [
+    {
+      name: 'test',
+      lat: 7,
+      lng: 52,
+    },
+  ];
 }
 
 export function saveDestinations(destinations: Destination[]): void {

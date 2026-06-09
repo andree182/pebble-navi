@@ -41,6 +41,18 @@ static void inbox_received(DictionaryIterator* iter, void* ctx)
     if (navigation_handle_message(iter)) return;
     if (menu_handle_message(iter)) return;
 
+    Tuple* route_mode_t = dict_find(iter, MESSAGE_KEY_ROUTE_MODE);
+    if (route_mode_t)
+    {
+        menu_set_route_mode((RouteMode)route_mode_t->value->int32);
+    }
+
+    Tuple* rotation_mode_t = dict_find(iter, MESSAGE_KEY_ROTATION_MODE);
+    if (rotation_mode_t)
+    {
+        menu_set_rotation_mode(rotation_mode_t->value->int32 != 0);
+    }
+
     Tuple* nav_line1 = dict_find(iter, MESSAGE_KEY_NAV_INFO_LINE1);
     if (nav_line1)
     {

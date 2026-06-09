@@ -1,5 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.loadSettings = loadSettings;
+exports.saveSettings = saveSettings;
 exports.loadUnits = loadUnits;
 exports.saveUnits = saveUnits;
 exports.loadDestinations = loadDestinations;
@@ -8,6 +10,20 @@ exports.rleEncode = rleEncode;
 exports.asciiNormalize = asciiNormalize;
 var DESTINATIONS_KEY = 'destinations';
 var UNITS_KEY = 'units';
+var SETTINGS_KEY = 'nav_settings';
+function loadSettings() {
+    try {
+        var saved = localStorage.getItem(SETTINGS_KEY);
+        if (saved) {
+            return JSON.parse(saved);
+        }
+    }
+    catch (e) { }
+    return { zoom: 16, mode: 'walking', rotationMode: false };
+}
+function saveSettings(settings) {
+    localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
+}
 function loadUnits() {
     return localStorage.getItem(UNITS_KEY) || 'metric';
 }
@@ -22,7 +38,13 @@ function loadDestinations() {
         }
     }
     catch (e) { }
-    return [];
+    return [
+        {
+            name: 'test',
+            lat: 7,
+            lng: 52,
+        },
+    ];
 }
 function saveDestinations(destinations) {
     try {

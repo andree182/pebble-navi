@@ -230,6 +230,26 @@ void menu_set_has_route(bool has_route)
     }
 }
 
+void menu_set_route_mode(RouteMode mode)
+{
+    s_route_mode = mode;
+    update_route_label();
+    if (s_mode == MODE_MAIN_MENU)
+    {
+        layer_mark_dirty(s_menu_layer);
+    }
+}
+
+void menu_set_rotation_mode(bool enabled)
+{
+    s_rotation_mode = enabled;
+    update_rotation_label();
+    if (s_mode == MODE_MAIN_MENU)
+    {
+        layer_mark_dirty(s_menu_layer);
+    }
+}
+
 void menu_hide(void)
 {
     s_mode = MODE_MAP;

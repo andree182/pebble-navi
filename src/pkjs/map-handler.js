@@ -82,9 +82,22 @@ var MapHandler = /** @class */ (function () {
             return rxjs_1.EMPTY;
         }))
             .subscribe();
-        // Set initial Data
-        this.mapState.next(__assign(__assign({}, this.mapState.value), { zoom: DEFAULT_ZOOM, mode: DEFAULT_MODE, width: w, height: h, rotationMode: false }));
+        // Set initial Data (load saved settings or use defaults)
+        var saved = (0, helper_1.loadSettings)();
+        this.rotationMode = saved.rotationMode;
+        this.mapState.next(__assign(__assign({}, this.mapState.value), { zoom: saved.zoom, mode: saved.mode, width: w, height: h, rotationMode: saved.rotationMode }));
     }
+    MapHandler.prototype.getRouteMode = function () {
+        var mode = this.mapState.value.mode;
+        if (mode === 'walking')
+            return 0;
+        if (mode === 'cycling')
+            return 1;
+        return 2;
+    };
+    MapHandler.prototype.getRotationMode = function () {
+        return this.rotationMode;
+    };
     MapHandler.prototype.updatePosition = function (pos) {
         var _a;
         if (ENABLE_LOGS)
@@ -112,12 +125,16 @@ var MapHandler = /** @class */ (function () {
         if (name) {
             this.existingRoute = undefined;
             this.mapState.next(__assign(__assign({}, this.mapState.value), { mode: name }));
+            var s = this.mapState.value;
+            (0, helper_1.saveSettings)({ zoom: s.zoom, mode: name, rotationMode: this.rotationMode });
         }
     };
     MapHandler.prototype.setRotationMode = function (enabled) {
         console.log('setRotationMode', enabled);
         this.rotationMode = enabled;
         this.mapState.next(__assign(__assign({}, this.mapState.value), { rotationMode: enabled }));
+        var s = this.mapState.value;
+        (0, helper_1.saveSettings)({ zoom: s.zoom, mode: s.mode, rotationMode: enabled });
     };
     MapHandler.prototype.zoom = function (zoom) {
         if (ENABLE_LOGS)
@@ -126,6 +143,7 @@ var MapHandler = /** @class */ (function () {
         var newZoom = state.zoom ? state.zoom + zoom : DEFAULT_ZOOM;
         newZoom = Math.max(1, Math.min(18, newZoom));
         this.mapState.next(__assign(__assign({}, state), { zoom: newZoom }));
+        (0, helper_1.saveSettings)({ zoom: newZoom, mode: state.mode, rotationMode: this.rotationMode });
     };
     MapHandler.prototype.canRecalc = function () {
         var now = Date.now();

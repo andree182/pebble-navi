@@ -6,6 +6,7 @@ var helper_1 = require("./helper");
 var rxjs_1 = require("rxjs");
 var destionations_1 = require("./destionations");
 var map_handler_1 = require("./map-handler");
+var message_queue_1 = require("./message-queue");
 var ENABLE_LOGS = false;
 console.log('JS App Started');
 var destroyApp = new rxjs_1.Subject();
@@ -101,6 +102,11 @@ var mapHandler;
     try {
         console.log('PebbleKit JS ready! Setting up new session.');
         mapHandler = new map_handler_1.MapHandler(destroyApp);
+        // Sync saved settings to watch on connect
+        message_queue_1.messageQueue.enqueue({
+            ROUTE_MODE: mapHandler.getRouteMode(),
+            ROTATION_MODE: mapHandler.getRotationMode() ? 1 : 0,
+        }, function () { }, function (err) { return console.error('Initial state send failed: ' + err.error); });
         location.pipe((0, rxjs_1.takeUntil)(destroyApp)).subscribe(function (pos) {
             if (ENABLE_LOGS)
                 console.log('geolocation event', JSON.stringify(pos));

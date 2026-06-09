@@ -13,7 +13,7 @@ import {
 import { MapState, renderForState, RenderOutput } from './server/stateRenderer';
 import { Destination } from './index';
 import { distanceToRoute, RouteResult } from './server/routing';
-import { asciiNormalize, loadUnits, rleEncode } from './helper';
+import { asciiNormalize, loadSettings, loadUnits, rleEncode, saveSettings } from './helper';
 import { messageQueue } from './message-queue';
 
 type PartialMapState = Partial<MapState>;
@@ -107,15 +107,28 @@ export class MapHandler {
       )
       .subscribe();
 
-    // Set initial Data
+    // Set initial Data (load saved settings or use defaults)
+    const saved = loadSettings();
+    this.rotationMode = saved.rotationMode;
     this.mapState.next({
       ...this.mapState.value,
-      zoom: DEFAULT_ZOOM,
-      mode: DEFAULT_MODE,
+      zoom: saved.zoom,
+      mode: saved.mode,
       width: w,
       height: h,
-      rotationMode: false,
+      rotationMode: saved.rotationMode,
     });
+  }
+
+  public getRouteMode(): number {
+    const mode = this.mapState.value.mode;
+    if (mode === 'walking') return 0;
+    if (mode === 'cycling') return 1;
+    return 2;
+  }
+
+  public getRotationMode(): boolean {
+    return this.rotationMode;
   }
 
   public updatePosition(pos: GeolocationPosition): void {
@@ -165,6 +178,8 @@ export class MapHandler {
         ...this.mapState.value,
         mode: name,
       });
+      const s = this.mapState.value;
+      saveSettings({ zoom: s.zoom!, mode: name, rotationMode: this.rotationMode });
     }
   }
 
@@ -175,6 +190,8 @@ export class MapHandler {
       ...this.mapState.value,
       rotationMode: enabled,
     });
+    const s = this.mapState.value;
+    saveSettings({ zoom: s.zoom!, mode: s.mode!, rotationMode: enabled });
   }
 
   public zoom(zoom: number): void {
@@ -189,6 +206,7 @@ export class MapHandler {
       ...state,
       zoom: newZoom,
     });
+    saveSettings({ zoom: newZoom, mode: state.mode!, rotationMode: this.rotationMode });
   }
 
   private canRecalc(): boolean {

@@ -4,6 +4,7 @@ import { loadDestinations, saveDestinations } from './helper';
 import { fromEvent, map, Subject, takeUntil, tap } from 'rxjs';
 import { sendDestinationsToWatch } from './destionations';
 import { MapHandler } from './map-handler';
+import { messageQueue } from './message-queue';
 
 const ENABLE_LOGS = false;
 
@@ -117,6 +118,16 @@ fromEvent(Pebble, 'ready')
       console.log('PebbleKit JS ready! Setting up new session.');
 
       mapHandler = new MapHandler(destroyApp);
+
+      // Sync saved settings to watch on connect
+      messageQueue.enqueue(
+        {
+          ROUTE_MODE: mapHandler.getRouteMode(),
+          ROTATION_MODE: mapHandler.getRotationMode() ? 1 : 0,
+        },
+        () => {},
+        (err) => console.error('Initial state send failed: ' + err.error),
+      );
 
       location.pipe(takeUntil(destroyApp)).subscribe((pos: GeolocationPosition) => {
         if (ENABLE_LOGS) console.log('geolocation event', JSON.stringify(pos));
