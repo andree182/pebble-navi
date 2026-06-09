@@ -30,7 +30,14 @@
     ],
     "projectType": "native",
     "resources": {
-      "media": []
+      "media": [
+        {
+          "file": "images/appicon.png",
+          "menuIcon": true,
+          "name": "IMAGE_MENU_ICON",
+          "type": "bitmap"
+        }
+      ]
     },
     "sdkVersion": "3",
     "targetPlatforms": [
@@ -43,7 +50,7 @@
       "watchface": false
     }
   },
-  "version": "1.0.3",
+  "version": "1.0.4",
   "scripts": {
     "tsc": "tsc",
     "build": "tsc; pebble build",
