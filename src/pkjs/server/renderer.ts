@@ -337,29 +337,29 @@ export function renderMap(input: RenderInput): Uint8Array {
   if (input.route) {
     const coords = input.route.coordinates;
     if (coords.length > 0) {
-      drawPolyline(buf, width, height, coords, input.zoom, vl, vt, 255, 255, 255, 5);
-      drawPolyline(buf, width, height, coords, input.zoom, vl, vt, 0x33, 0x66, 0xff, 3);
+      drawPolyline(buf, width, height, coords, input.zoom, vl, vt, 255, 255, 255, 6);
+      drawPolyline(buf, width, height, coords, input.zoom, vl, vt, 51, 102, 255, 4);
     }
   }
 
   if (input.start) {
     const origin = markerPixel(input.start.lat, input.start.lng, input.zoom, vl, vt);
     drawCircleOutline(buf, width, height, origin.x, origin.y, 6, 255, 255, 255);
-    drawFilledCircle(buf, width, height, origin.x, origin.y, 5, 0x22, 0xcc, 0x66);
+    drawFilledCircle(buf, width, height, origin.x, origin.y, 5, 34, 204, 102);
     drawCircleOutline(buf, width, height, origin.x, origin.y, 5, 255, 255, 255);
   }
 
   if (input.dest) {
     const d = markerPixel(input.dest.lat, input.dest.lng, input.zoom, vl, vt);
     drawDiamondOutline(buf, width, height, d.x, d.y, 8, 255, 255, 255);
-    drawFilledDiamond(buf, width, height, d.x, d.y, 7, 0xff, 0x33, 0x33);
+    drawFilledDiamond(buf, width, height, d.x, d.y, 7, 255, 51, 51);
     drawDiamondOutline(buf, width, height, d.x, d.y, 7, 255, 255, 255);
   }
 
   if (input.currentPos) {
     const p = markerPixel(input.currentPos.lat, input.currentPos.lng, input.zoom, vl, vt);
     if (input.bearing != null) {
-      drawArrow(buf, width, height, p.x, p.y, (input.bearing * Math.PI) / 180, 0xff, 0xcc, 0x00);
+      drawArrow(buf, width, height, p.x, p.y, (input.bearing * Math.PI) / 180, 0x00, 0xcc, 0xff);
       const halfArrow = 9;
       for (let dy = -halfArrow; dy <= halfArrow; dy++) {
         for (let dx = -halfArrow; dx <= halfArrow; dx++) {
@@ -379,7 +379,7 @@ export function renderMap(input: RenderInput): Uint8Array {
         }
       }
     } else {
-      drawFilledCircle(buf, width, height, p.x, p.y, 5, 0xff, 0xcc, 0x00);
+      drawFilledCircle(buf, width, height, p.x, p.y, 5, 0, 0xcc, 0xff);
       drawCircleOutline(buf, width, height, p.x, p.y, 5, 0, 0, 0);
     }
   }
