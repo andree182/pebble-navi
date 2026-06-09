@@ -36,11 +36,13 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
     }
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.USER_Y_OFFSET = void 0;
 exports.renderForState = renderForState;
 var osm_js_1 = require("./osm.js");
 var routing_js_1 = require("./routing.js");
 var renderer_js_1 = require("./renderer.js");
 var pebble_palette_js_1 = require("./pebble-palette.js");
+exports.USER_Y_OFFSET = 180;
 function renderForState(s, existingRoute, isFlint) {
     return __awaiter(this, void 0, void 0, function () {
         var center, centerPx, vl, vt, tx0, ty0, tx1, ty1, tilePromises, _loop_1, tx, tileResults, tiles, route, _a, _b, rgba, pixels, nextStep, ns;
@@ -51,7 +53,7 @@ function renderForState(s, existingRoute, isFlint) {
                     center = s.currentPos || s.origin;
                     centerPx = (0, osm_js_1.worldPixel)(center.lat, center.lng, s.zoom);
                     vl = centerPx.wx - s.width / 2;
-                    vt = centerPx.wy - s.height / 2;
+                    vt = centerPx.wy - (s.currentPos && exports.USER_Y_OFFSET ? exports.USER_Y_OFFSET : s.height / 2);
                     tx0 = Math.floor(vl / osm_js_1.TILE_SIZE);
                     ty0 = Math.floor(vt / osm_js_1.TILE_SIZE);
                     tx1 = Math.floor((vl + s.width - 1) / osm_js_1.TILE_SIZE);
@@ -100,6 +102,7 @@ function renderForState(s, existingRoute, isFlint) {
                         bearing: s.bearing,
                         route: route,
                         tiles: tiles,
+                        userOffsetY: s.currentPos && exports.USER_Y_OFFSET ? exports.USER_Y_OFFSET : undefined,
                     });
                     pixels = isFlint
                         ? (0, pebble_palette_js_1.quantizeToPebble2Bit)(rgba, s.width, s.height).pixels

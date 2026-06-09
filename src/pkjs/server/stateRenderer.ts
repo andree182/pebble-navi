@@ -3,6 +3,8 @@ import { fetchRoute, findNextStep, type RouteResult, type RouteStep } from './ro
 import { renderMap } from './renderer.js';
 import { quantizeToPebble, quantizeToPebble2Bit } from './pebble-palette.js';
 
+export const USER_Y_OFFSET = 180;
+
 export interface MapState {
   currentPos: { lat: number; lng: number };
   bearing?: number;
@@ -12,6 +14,7 @@ export interface MapState {
   mode: string;
   width: number;
   height: number;
+  rotationMode: boolean;
 }
 
 export interface RenderOutput {
@@ -32,7 +35,7 @@ export async function renderForState(
 
   const centerPx = worldPixel(center.lat, center.lng, s.zoom);
   const vl = centerPx.wx - s.width / 2;
-  const vt = centerPx.wy - s.height / 2;
+  const vt = centerPx.wy - (s.currentPos && USER_Y_OFFSET ? USER_Y_OFFSET : s.height / 2);
 
   const tx0 = Math.floor(vl / TILE_SIZE);
   const ty0 = Math.floor(vt / TILE_SIZE);
@@ -67,6 +70,7 @@ export async function renderForState(
     bearing: s.bearing,
     route,
     tiles,
+    userOffsetY: s.currentPos && USER_Y_OFFSET ? USER_Y_OFFSET : undefined,
   });
 
   const pixels = isFlint

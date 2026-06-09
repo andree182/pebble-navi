@@ -13,6 +13,7 @@ export interface RenderInput {
   bearing?: number;
   route?: RouteResult;
   tiles: Array<{ buffer: Uint8Array; tx: number; ty: number }>;
+  userOffsetY?: number;
 }
 
 function fillRect(
@@ -303,8 +304,10 @@ export function renderMap(input: RenderInput): Uint8Array {
   fillRect(buf, width, height, 0, 0, width, height, 0xf8, 0xf8, 0xf8);
 
   const center = worldPixel(input.center.lat, input.center.lng, input.zoom);
-  const vl = center.wx - width / 2;
-  const vt = center.wy - height / 2;
+  const offsetX = width / 2;
+  const offsetY = input.userOffsetY ?? height / 2;
+  const vl = center.wx - offsetX;
+  const vt = center.wy - offsetY;
 
   for (const tile of input.tiles) {
     try {

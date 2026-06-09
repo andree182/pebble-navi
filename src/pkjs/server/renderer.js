@@ -171,14 +171,17 @@ function markerPixel(lat, lng, zoom, vl, vt) {
     return { x: p.wx - vl, y: p.wy - vt };
 }
 function renderMap(input) {
+    var _a;
     var width = input.width, height = input.height;
     var buf = new Uint8Array(width * height * 4);
     fillRect(buf, width, height, 0, 0, width, height, 0xf8, 0xf8, 0xf8);
     var center = (0, osm_js_1.worldPixel)(input.center.lat, input.center.lng, input.zoom);
-    var vl = center.wx - width / 2;
-    var vt = center.wy - height / 2;
-    for (var _i = 0, _a = input.tiles; _i < _a.length; _i++) {
-        var tile = _a[_i];
+    var offsetX = width / 2;
+    var offsetY = (_a = input.userOffsetY) !== null && _a !== void 0 ? _a : height / 2;
+    var vl = center.wx - offsetX;
+    var vt = center.wy - offsetY;
+    for (var _i = 0, _b = input.tiles; _i < _b.length; _i++) {
+        var tile = _b[_i];
         try {
             var decoded = upng_js_1.default.decode(tile.buffer.buffer);
             var rgbaArr = upng_js_1.default.toRGBA8(decoded)[0];
@@ -202,7 +205,7 @@ function renderMap(input) {
                 }
             }
         }
-        catch (_b) {
+        catch (_c) {
             /* skip failed tile */
         }
     }
