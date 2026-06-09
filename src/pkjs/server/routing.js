@@ -36,6 +36,7 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
     }
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.bearingTo = bearingTo;
 exports.haversine = haversine;
 exports.closestPointOnSegment = closestPointOnSegment;
 exports.distanceToRoute = distanceToRoute;
@@ -49,6 +50,15 @@ var SERVERS = {
 };
 var UA = 'pebble-map-renderer/1.0';
 var EARTH_RADIUS_M = 6371000;
+function bearingTo(from, to) {
+    var toRad = function (d) { return (d * Math.PI) / 180; };
+    var φ1 = toRad(from.lat);
+    var φ2 = toRad(to.lat);
+    var Δλ = toRad(to.lng - from.lng);
+    var y = Math.sin(Δλ) * Math.cos(φ2);
+    var x = Math.cos(φ1) * Math.sin(φ2) - Math.sin(φ1) * Math.cos(φ2) * Math.cos(Δλ);
+    return ((Math.atan2(y, x) * 180) / Math.PI + 360) % 360;
+}
 function haversine(lat1, lng1, lat2, lng2) {
     var toRad = function (d) { return (d * Math.PI) / 180; };
     var dLat = toRad(lat2 - lat1);

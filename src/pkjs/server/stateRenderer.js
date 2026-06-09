@@ -45,19 +45,62 @@ var pebble_palette_js_1 = require("./pebble-palette.js");
 exports.USER_Y_OFFSET = 180;
 function renderForState(s, existingRoute, isFlint) {
     return __awaiter(this, void 0, void 0, function () {
-        var center, centerPx, vl, vt, tx0, ty0, tx1, ty1, tilePromises, _loop_1, tx, tileResults, tiles, route, _a, _b, rgba, pixels, nextStep, ns;
+        var center, route, _a, _b, nextStep, ns, mapRotation, renderW, renderH, rad, cosA, sinA, centerPx, vl, vt, tx0, ty0, tx1, ty1, tilePromises, _loop_1, tx, tileResults, tiles, rgba, pixels;
         var _c;
         return __generator(this, function (_d) {
             switch (_d.label) {
                 case 0:
                     center = s.currentPos || s.origin;
+                    if (!(existingRoute !== null && existingRoute !== void 0)) return [3 /*break*/, 1];
+                    _a = existingRoute;
+                    return [3 /*break*/, 5];
+                case 1:
+                    if (!(s.dest && s.origin)) return [3 /*break*/, 3];
+                    return [4 /*yield*/, (0, routing_js_1.fetchRoute)(s.origin, s.dest, s.mode)];
+                case 2:
+                    _b = ((_c = (_d.sent())) !== null && _c !== void 0 ? _c : undefined);
+                    return [3 /*break*/, 4];
+                case 3:
+                    _b = undefined;
+                    _d.label = 4;
+                case 4:
+                    _a = (_b);
+                    _d.label = 5;
+                case 5:
+                    route = _a;
+                    if (route && s.currentPos) {
+                        ns = (0, routing_js_1.findNextStep)(route, s.currentPos);
+                        if (ns)
+                            nextStep = ns;
+                    }
+                    if (s.rotationMode) {
+                        if (nextStep && s.currentPos) {
+                            mapRotation = -(0, routing_js_1.bearingTo)(s.currentPos, nextStep.step.location);
+                        }
+                        else if (s.bearing != null) {
+                            mapRotation = -s.bearing;
+                        }
+                    }
+                    renderW = s.width, renderH = s.height;
+                    if (mapRotation != null) {
+                        rad = Math.abs((mapRotation * Math.PI) / 180);
+                        cosA = Math.abs(Math.cos(rad));
+                        sinA = Math.abs(Math.sin(rad));
+                        renderW = Math.ceil(s.width * cosA + s.height * sinA) + 1;
+                        renderH = Math.ceil(s.width * sinA + s.height * cosA) + 1;
+                    }
                     centerPx = (0, osm_js_1.worldPixel)(center.lat, center.lng, s.zoom);
-                    vl = centerPx.wx - s.width / 2;
-                    vt = centerPx.wy - (s.currentPos && exports.USER_Y_OFFSET ? exports.USER_Y_OFFSET : s.height / 2);
+                    vl = centerPx.wx - renderW / 2;
+                    vt = centerPx.wy -
+                        (mapRotation != null
+                            ? renderH / 2
+                            : s.currentPos && exports.USER_Y_OFFSET
+                                ? exports.USER_Y_OFFSET
+                                : s.height / 2);
                     tx0 = Math.floor(vl / osm_js_1.TILE_SIZE);
                     ty0 = Math.floor(vt / osm_js_1.TILE_SIZE);
-                    tx1 = Math.floor((vl + s.width - 1) / osm_js_1.TILE_SIZE);
-                    ty1 = Math.floor((vt + s.height - 1) / osm_js_1.TILE_SIZE);
+                    tx1 = Math.floor((vl + renderW - 1) / osm_js_1.TILE_SIZE);
+                    ty1 = Math.floor((vt + renderH - 1) / osm_js_1.TILE_SIZE);
                     tilePromises = [];
                     _loop_1 = function (tx) {
                         var _loop_2 = function (ty) {
@@ -71,29 +114,14 @@ function renderForState(s, existingRoute, isFlint) {
                         _loop_1(tx);
                     }
                     return [4 /*yield*/, Promise.all(tilePromises)];
-                case 1:
+                case 6:
                     tileResults = _d.sent();
                     tiles = tileResults.filter(function (t) { return t !== null; });
-                    if (!(existingRoute !== null && existingRoute !== void 0)) return [3 /*break*/, 2];
-                    _a = existingRoute;
-                    return [3 /*break*/, 6];
-                case 2:
-                    if (!(s.dest && s.origin)) return [3 /*break*/, 4];
-                    return [4 /*yield*/, (0, routing_js_1.fetchRoute)(s.origin, s.dest, s.mode)];
-                case 3:
-                    _b = ((_c = (_d.sent())) !== null && _c !== void 0 ? _c : undefined);
-                    return [3 /*break*/, 5];
-                case 4:
-                    _b = undefined;
-                    _d.label = 5;
-                case 5:
-                    _a = (_b);
-                    _d.label = 6;
-                case 6:
-                    route = _a;
                     rgba = (0, renderer_js_1.renderMap)({
-                        width: s.width,
-                        height: s.height,
+                        width: renderW,
+                        height: renderH,
+                        outputWidth: mapRotation != null ? s.width : undefined,
+                        outputHeight: mapRotation != null ? s.height : undefined,
                         zoom: s.zoom,
                         center: center,
                         start: s.origin,
@@ -102,16 +130,12 @@ function renderForState(s, existingRoute, isFlint) {
                         bearing: s.bearing,
                         route: route,
                         tiles: tiles,
-                        userOffsetY: s.currentPos && exports.USER_Y_OFFSET ? exports.USER_Y_OFFSET : undefined,
+                        userOffsetY: mapRotation != null ? renderH / 2 - exports.USER_Y_OFFSET : undefined,
+                        rotation: mapRotation,
                     });
                     pixels = isFlint
                         ? (0, pebble_palette_js_1.quantizeToPebble2Bit)(rgba, s.width, s.height).pixels
                         : (0, pebble_palette_js_1.quantizeToPebble)(rgba, s.width, s.height).pixels;
-                    if (route && s.currentPos) {
-                        ns = (0, routing_js_1.findNextStep)(route, s.currentPos);
-                        if (ns)
-                            nextStep = ns;
-                    }
                     return [2 /*return*/, {
                             pixels: pixels,
                             route: route,

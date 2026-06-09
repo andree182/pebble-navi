@@ -1,5 +1,11 @@
 import { TILE_SIZE, getTile, worldPixel } from './osm.js';
-import { fetchRoute, findNextStep, type RouteResult, type RouteStep } from './routing.js';
+import {
+  fetchRoute,
+  findNextStep,
+  bearingTo,
+  type RouteResult,
+  type RouteStep,
+} from './routing.js';
 import { renderMap } from './renderer.js';
 import { quantizeToPebble, quantizeToPebble2Bit } from './pebble-palette.js';
 
@@ -33,14 +39,49 @@ export async function renderForState(
 ): Promise<RenderOutput> {
   let center = s.currentPos || s.origin;
 
+  const route =
+    existingRoute ??
+    (s.dest && s.origin ? ((await fetchRoute(s.origin, s.dest, s.mode)) ?? undefined) : undefined);
+
+  let nextStep: { step: RouteStep; remainingDist: number } | undefined;
+  if (route && s.currentPos) {
+    const ns = findNextStep(route, s.currentPos);
+    if (ns) nextStep = ns;
+  }
+
+  let mapRotation: number | undefined;
+  if (s.rotationMode) {
+    if (nextStep && s.currentPos) {
+      mapRotation = -bearingTo(s.currentPos, nextStep.step.location);
+    } else if (s.bearing != null) {
+      mapRotation = -s.bearing;
+    }
+  }
+
+  let renderW = s.width,
+    renderH = s.height;
+  if (mapRotation != null) {
+    const rad = Math.abs((mapRotation * Math.PI) / 180);
+    const cosA = Math.abs(Math.cos(rad));
+    const sinA = Math.abs(Math.sin(rad));
+    renderW = Math.ceil(s.width * cosA + s.height * sinA) + 1;
+    renderH = Math.ceil(s.width * sinA + s.height * cosA) + 1;
+  }
+
   const centerPx = worldPixel(center.lat, center.lng, s.zoom);
-  const vl = centerPx.wx - s.width / 2;
-  const vt = centerPx.wy - (s.currentPos && USER_Y_OFFSET ? USER_Y_OFFSET : s.height / 2);
+  const vl = centerPx.wx - renderW / 2;
+  const vt =
+    centerPx.wy -
+    (mapRotation != null
+      ? renderH / 2
+      : s.currentPos && USER_Y_OFFSET
+        ? USER_Y_OFFSET
+        : s.height / 2);
 
   const tx0 = Math.floor(vl / TILE_SIZE);
   const ty0 = Math.floor(vt / TILE_SIZE);
-  const tx1 = Math.floor((vl + s.width - 1) / TILE_SIZE);
-  const ty1 = Math.floor((vt + s.height - 1) / TILE_SIZE);
+  const tx1 = Math.floor((vl + renderW - 1) / TILE_SIZE);
+  const ty1 = Math.floor((vt + renderH - 1) / TILE_SIZE);
 
   const tilePromises: Promise<{ tx: number; ty: number; buffer: Uint8Array } | null>[] = [];
   for (let tx = tx0; tx <= tx1; tx++) {
@@ -55,13 +96,11 @@ export async function renderForState(
     (t): t is { tx: number; ty: number; buffer: Uint8Array } => t !== null,
   );
 
-  const route =
-    existingRoute ??
-    (s.dest && s.origin ? ((await fetchRoute(s.origin, s.dest, s.mode)) ?? undefined) : undefined);
-
   const rgba = renderMap({
-    width: s.width,
-    height: s.height,
+    width: renderW,
+    height: renderH,
+    outputWidth: mapRotation != null ? s.width : undefined,
+    outputHeight: mapRotation != null ? s.height : undefined,
     zoom: s.zoom,
     center,
     start: s.origin,
@@ -70,18 +109,13 @@ export async function renderForState(
     bearing: s.bearing,
     route,
     tiles,
-    userOffsetY: s.currentPos && USER_Y_OFFSET ? USER_Y_OFFSET : undefined,
+    userOffsetY: mapRotation != null ? renderH / 2 - USER_Y_OFFSET : undefined,
+    rotation: mapRotation,
   });
 
   const pixels = isFlint
     ? quantizeToPebble2Bit(rgba, s.width, s.height).pixels
     : quantizeToPebble(rgba, s.width, s.height).pixels;
-
-  let nextStep: { step: RouteStep; remainingDist: number } | undefined;
-  if (route && s.currentPos) {
-    const ns = findNextStep(route, s.currentPos);
-    if (ns) nextStep = ns;
-  }
 
   return {
     pixels,

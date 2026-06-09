@@ -1,4 +1,15 @@
 "use strict";
+var __assign = (this && this.__assign) || function () {
+    __assign = Object.assign || function(t) {
+        for (var s, i = 1, n = arguments.length; i < n; i++) {
+            s = arguments[i];
+            for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p))
+                t[p] = s[p];
+        }
+        return t;
+    };
+    return __assign.apply(this, arguments);
+};
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
@@ -170,7 +181,7 @@ function markerPixel(lat, lng, zoom, vl, vt) {
     var p = (0, osm_js_1.worldPixel)(lat, lng, zoom);
     return { x: p.wx - vl, y: p.wy - vt };
 }
-function renderMap(input) {
+function renderMapNormal(input) {
     var _a;
     var width = input.width, height = input.height;
     var buf = new Uint8Array(width * height * 4);
@@ -255,4 +266,53 @@ function renderMap(input) {
         }
     }
     return buf;
+}
+function renderMapRotated(input) {
+    var _a, _b;
+    var outW = (_a = input.outputWidth) !== null && _a !== void 0 ? _a : input.width;
+    var outH = (_b = input.outputHeight) !== null && _b !== void 0 ? _b : input.height;
+    var rotRad = (input.rotation * Math.PI) / 180;
+    var absRad = Math.abs(rotRad);
+    var cosA = Math.abs(Math.cos(absRad));
+    var sinA = Math.abs(Math.sin(absRad));
+    var expW = Math.ceil(outW * cosA + outH * sinA) + 1;
+    var expH = Math.ceil(outW * sinA + outH * cosA) + 1;
+    var unrotated = renderMapNormal(__assign(__assign({}, input), { width: expW, height: expH, userOffsetY: expH / 2, rotation: undefined }));
+    var cosR = Math.cos(rotRad);
+    var sinR = Math.sin(rotRad);
+    var expCX = expW / 2;
+    var expCY = expH / 2;
+    var outCX = outW / 2;
+    var outCY = outH / 2;
+    var buf = new Uint8Array(outW * outH * 4);
+    var bgR = 0xf8, bgG = 0xf8, bgB = 0xf8;
+    for (var y = 0; y < outH; y++) {
+        for (var x = 0; x < outW; x++) {
+            var dx = x - outCX;
+            var dy = y - outCY;
+            var sx = Math.round(expCX + dx * cosR + dy * sinR);
+            var sy = Math.round(expCY - dx * sinR + dy * cosR);
+            var dstIdx = (y * outW + x) * 4;
+            if (sx >= 0 && sx < expW && sy >= 0 && sy < expH) {
+                var srcIdx = (sy * expW + sx) * 4;
+                buf[dstIdx] = unrotated[srcIdx];
+                buf[dstIdx + 1] = unrotated[srcIdx + 1];
+                buf[dstIdx + 2] = unrotated[srcIdx + 2];
+                buf[dstIdx + 3] = 255;
+            }
+            else {
+                buf[dstIdx] = bgR;
+                buf[dstIdx + 1] = bgG;
+                buf[dstIdx + 2] = bgB;
+                buf[dstIdx + 3] = 255;
+            }
+        }
+    }
+    return buf;
+}
+function renderMap(input) {
+    if (input.rotation != null && input.rotation !== 0) {
+        return renderMapRotated(input);
+    }
+    return renderMapNormal(input);
 }

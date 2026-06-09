@@ -24,6 +24,19 @@ export interface RouteResult {
 
 const EARTH_RADIUS_M = 6_371_000;
 
+export function bearingTo(
+  from: { lat: number; lng: number },
+  to: { lat: number; lng: number },
+): number {
+  const toRad = (d: number) => (d * Math.PI) / 180;
+  const φ1 = toRad(from.lat);
+  const φ2 = toRad(to.lat);
+  const Δλ = toRad(to.lng - from.lng);
+  const y = Math.sin(Δλ) * Math.cos(φ2);
+  const x = Math.cos(φ1) * Math.sin(φ2) - Math.sin(φ1) * Math.cos(φ2) * Math.cos(Δλ);
+  return ((Math.atan2(y, x) * 180) / Math.PI + 360) % 360;
+}
+
 export function haversine(lat1: number, lng1: number, lat2: number, lng2: number): number {
   const toRad = (d: number) => (d * Math.PI) / 180;
   const dLat = toRad(lat2 - lat1);

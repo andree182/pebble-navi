@@ -14,6 +14,9 @@ export interface RenderInput {
   route?: RouteResult;
   tiles: Array<{ buffer: Uint8Array; tx: number; ty: number }>;
   userOffsetY?: number;
+  rotation?: number;
+  outputWidth?: number;
+  outputHeight?: number;
 }
 
 function fillRect(
@@ -297,7 +300,7 @@ function markerPixel(lat: number, lng: number, zoom: number, vl: number, vt: num
   return { x: p.wx - vl, y: p.wy - vt };
 }
 
-export function renderMap(input: RenderInput): Uint8Array {
+function renderMapNormal(input: RenderInput): Uint8Array {
   const { width, height } = input;
   const buf = new Uint8Array(width * height * 4);
 
@@ -388,4 +391,65 @@ export function renderMap(input: RenderInput): Uint8Array {
   }
 
   return buf;
+}
+
+function renderMapRotated(input: RenderInput): Uint8Array {
+  const outW = input.outputWidth ?? input.width;
+  const outH = input.outputHeight ?? input.height;
+  const rotRad = (input.rotation! * Math.PI) / 180;
+
+  const absRad = Math.abs(rotRad);
+  const cosA = Math.abs(Math.cos(absRad));
+  const sinA = Math.abs(Math.sin(absRad));
+  const expW = Math.ceil(outW * cosA + outH * sinA) + 1;
+  const expH = Math.ceil(outW * sinA + outH * cosA) + 1;
+
+  const unrotated = renderMapNormal({
+    ...input,
+    width: expW,
+    height: expH,
+    userOffsetY: expH / 2,
+    rotation: undefined,
+  });
+
+  const cosR = Math.cos(rotRad);
+  const sinR = Math.sin(rotRad);
+  const expCX = expW / 2;
+  const expCY = expH / 2;
+  const outCX = outW / 2;
+  const outCY = outH / 2;
+  const buf = new Uint8Array(outW * outH * 4);
+  const bgR = 0xf8, bgG = 0xf8, bgB = 0xf8;
+
+  for (let y = 0; y < outH; y++) {
+    for (let x = 0; x < outW; x++) {
+      const dx = x - outCX;
+      const dy = y - outCY;
+      const sx = Math.round(expCX + dx * cosR + dy * sinR);
+      const sy = Math.round(expCY - dx * sinR + dy * cosR);
+
+      const dstIdx = (y * outW + x) * 4;
+      if (sx >= 0 && sx < expW && sy >= 0 && sy < expH) {
+        const srcIdx = (sy * expW + sx) * 4;
+        buf[dstIdx] = unrotated[srcIdx];
+        buf[dstIdx + 1] = unrotated[srcIdx + 1];
+        buf[dstIdx + 2] = unrotated[srcIdx + 2];
+        buf[dstIdx + 3] = 255;
+      } else {
+        buf[dstIdx] = bgR;
+        buf[dstIdx + 1] = bgG;
+        buf[dstIdx + 2] = bgB;
+        buf[dstIdx + 3] = 255;
+      }
+    }
+  }
+
+  return buf;
+}
+
+export function renderMap(input: RenderInput): Uint8Array {
+  if (input.rotation != null && input.rotation !== 0) {
+    return renderMapRotated(input);
+  }
+  return renderMapNormal(input);
 }
