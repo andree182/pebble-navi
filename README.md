@@ -23,19 +23,32 @@ Turn-by-turn navigation for Pebble smartwatches.
 - Map rendering with OpenStreetMap tiles
 - Destination selection from saved locations
 - Save current location
-- Supports Pebble Time 2 (emery), Pebble Time Round (gabbro), and Pebble 2 Duo (flint)
+- Rotation mode — follow your heading
+- Supports Pebble Time 2 (emery), Pebble Time Round (gabbro), and Pebble 2 (flint)
 
 ## Architecture
 
 - **`src/c/`** — Watch C code
   - `main.c` — App entry point, message handling, routing state
-  - `navigation.c` — Map layer rendering and bitmap management
-  - `menu.c` — Menu overlay for destination selection
-- **`src/pkjs/`** — Phone-side TypeScript (compiled to JS)
-  - `index.ts` — App lifecycle, Pebble message handling
-  - `map-handler.ts` — Tile coord fetch and render pipeline
+  - `navigation.c` / `navigation.h` — Map layer rendering, bitmap management, rotation
+  - `menu.c` / `menu.h` — Menu overlay for destination selection
+- **`src/pkjs/`** — Phone-side TypeScript (compiled to JS in-place)
+  - `index.ts` — App lifecycle, Pebble AppMessage handling
+  - `map-handler.ts` — Tile coordinate fetch, render-to-chunks pipeline
   - `destionations.ts` — Destination list management
-  - `server/` — OSM tile fetch, routing (OSRM), Pebble palette rendering, localStorage cache
+  - `message-queue.ts` — Serialized AppMessage delivery with ack/nack tracking
+  - `helper.ts` — Settings persistence, RLE encoding, ASCII normalization
+  - `settings.ts` — Settings page (destinations, units)
+  - `server/` — OSM tile fetch, routing (OSRM), Pebble-palette rendering, localStorage cache
+    - `osm.ts` — Tile URL construction and coordinate math
+    - `routing.ts` — OSRM route request and response parsing
+    - `renderer.ts` — Tile compositing and route overlay
+    - `stateRenderer.ts` — Full map state → bitmap render pipeline
+    - `pebble-palette.ts` — Image quantization to Pebble's 64-color palette
+    - `tile-cache.ts` — LocalStorage tile caching with LRU eviction
+    - `polyfills.ts` — ES5 compatibility shims
+
+RLE-compressed bitmap chunks are sent to the watch via `AppMessage`.
 
 ## Build
 
@@ -44,16 +57,17 @@ npm run tsc          # TypeScript compile only
 npm run build        # tsc + pebble build (full)
 npm run start        # build + install to emery emulator
 npm run push         # build + install to phone
+npm run format       # prettier --write "src/**/*.ts"
 ```
 
-Requires the [Pebble SDK](https://developer.rebble.io/).
+Requires the [Pebble SDK](https://developer.rebble.io/)
 
 ## Getting Started
 
 ```sh
 # Clone and install dependencies
-git clone https://github.com/jonny/navi-app
-cd navi-app
+git clone https://github.com/jonny/pebble-navi
+cd pebble-navi
 npm install
 
 # Run on the emery (Pebble Time 2) emulator
@@ -77,10 +91,16 @@ Before running, start the Pebble emulator from the Pebble SDK, or connect your p
 
 Once installed, open the app in the Pebble mobile app and tap the gear icon to configure:
 
-- **Saved Destinations** — Add locations by address (requires an [OpenRouteService](https://openrouteservice.org/) API key) or raw `lat,lng` coordinates; delete existing ones
-- **ORS API Key** — Set your OpenRouteService API key for address-based geocoding
+- **Saved Destinations** — Add locations by address or raw `lat,lng` coordinates; delete existing ones
+- **Units** — Metric or imperial
 
 Settings are persisted in the phone's `localStorage`.
+
+## Key Details
+
+-   `tsconfig.json` uses `ignoreDeprecations: "6.0"` (TS 6.x, ES5 target).
+-   Message keys are defined in `package.json` `pebble.messageKeys`. `CMakeLists.txt` generates `message_keys.auto.h` for CLion IDE support; the real build uses `waf`.
+-   Targets: `emery`, `gabbro`, `flint`.
 
 ## Data Attribution
 

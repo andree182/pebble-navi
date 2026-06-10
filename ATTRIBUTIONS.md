@@ -27,8 +27,9 @@ via `routing.openstreetmap.de`, using OpenStreetMap data.
 
 ## Geocoding
 
-Address autocomplete uses [OpenRouteService](https://openrouteservice.org/)
-(when an API key is configured). Direct coordinate entry always works.
+Address autocomplete in the settings page uses
+[Photon](https://photon.komoot.io) by Komoot (OpenStreetMap data).
+Direct coordinate entry always works.
 
 ## Source Code
 
