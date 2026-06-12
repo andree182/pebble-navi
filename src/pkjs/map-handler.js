@@ -125,6 +125,7 @@ var MapHandler = /** @class */ (function () {
     MapHandler.prototype.selectRoute = function (destination) {
         if (ENABLE_LOGS)
             console.info('selectRoute', JSON.stringify(destination));
+        this.existingRoute = undefined;
         var state = this.mapState.value;
         this.mapState.next(__assign(__assign({}, state), { dest: destination, origin: state.currentPos }));
     };
