@@ -103,7 +103,7 @@ export class MapHandler {
               state.currentPos.lng,
               this.existingRoute.coordinates,
             );
-            if (d > 100 && this.canRecalc()) {
+            if (d > this.getRecalculationDistance() && this.canRecalc()) {
               console.log('Off route by ' + Math.round(d) + 'm, recalculating');
               this.existingRoute = undefined;
               state.origin = state.currentPos;
@@ -354,5 +354,16 @@ export class MapHandler {
       () => {},
       (err) => console.error('Route info send failed: ' + err.error),
     );
+  }
+
+  private getRecalculationDistance() {
+    switch (this.mapState.value.mode) {
+      case 'walking':
+        return 15;
+      case 'cycling':
+        return 45;
+      default:
+        return 100;
+    }
   }
 }
