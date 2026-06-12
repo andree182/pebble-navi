@@ -36,7 +36,7 @@ static int s_palette_received = 1;
 
 static void apply_palette(GBitmap* bmp)
 {
-#ifdef PBL_PLATFORM_FLINT
+#ifdef PBL_BW
     GColor8* pal = malloc(4 * sizeof(GColor8));
     if (!pal) return;
     pal[0].argb = 0xC0;
@@ -92,9 +92,39 @@ static void map_update_proc(Layer* layer, GContext* ctx)
     GRect bounds = layer_get_bounds(layer);
     int icon_size = 22;
 
-#ifdef PBL_PLATFORM_GABBRO
+#ifdef PBL_PLATFORM_CHALK
+#define MARGINE 0
+#define ROUND_FIX 24
+#define HEIGHT_CLAMP 29
+
+    graphics_context_set_fill_color(ctx, GColorBulgarianRose);
+    graphics_fill_rect(ctx, GRect(ROUND_FIX + MARGINE - 3, ROUND_FIX + MARGINE, 44, 20), icon_size / 2, GCornersAll);
+    graphics_context_set_text_color(ctx, GColorWhite);
+    graphics_draw_text(ctx, s_time_text, fonts_get_system_font(FONT_KEY_GOTHIC_18_BOLD), GRect(ROUND_FIX + MARGINE - 3, ROUND_FIX - 2 + MARGINE, 44, 20), GTextOverflowModeTrailingEllipsis, GTextAlignmentCenter, NULL);
+
+    GRect plus_rect = GRect(bounds.size.w - icon_size - ROUND_FIX - MARGINE + 24, ROUND_FIX + MARGINE + HEIGHT_CLAMP, icon_size, icon_size);
+    graphics_context_set_fill_color(ctx, GColorBulgarianRose);
+    graphics_fill_rect(ctx, plus_rect, icon_size / 2, GCornersAll);
+    graphics_context_set_text_color(ctx, GColorWhite);
+    graphics_draw_text(ctx, "+", fonts_get_system_font(FONT_KEY_GOTHIC_18_BOLD), GRect(plus_rect.origin.x, plus_rect.origin.y - 2, plus_rect.size.w, plus_rect.size.h), GTextOverflowModeTrailingEllipsis, GTextAlignmentCenter, NULL);
+
+    GRect minus_rect = GRect(bounds.size.w - icon_size - ROUND_FIX - MARGINE + 24, bounds.size.h - ROUND_FIX - MARGINE - icon_size - HEIGHT_CLAMP, icon_size, icon_size);
+    graphics_context_set_fill_color(ctx, GColorBulgarianRose);
+    graphics_fill_rect(ctx, minus_rect, icon_size / 2, GCornersAll);
+    graphics_context_set_text_color(ctx, GColorWhite);
+    graphics_draw_text(ctx, "-", fonts_get_system_font(FONT_KEY_GOTHIC_18_BOLD), GRect(minus_rect.origin.x, minus_rect.origin.y - 2, minus_rect.size.w, minus_rect.size.h), GTextOverflowModeTrailingEllipsis, GTextAlignmentCenter, NULL);
+
+    GPoint gear_center = GPoint(bounds.size.w - icon_size / 2 - MARGINE - 3, (bounds.size.h / 2) + 1);
+    GRect gear_rect = GRect(gear_center.x - icon_size / 2 - MARGINE, gear_center.y - icon_size / 2, icon_size, icon_size);
+    graphics_context_set_fill_color(ctx, GColorBulgarianRose);
+    graphics_fill_rect(ctx, gear_rect, icon_size / 2, GCornersAll);
+    graphics_context_set_text_color(ctx, GColorWhite);
+    graphics_draw_text(ctx, "*", fonts_get_system_font(FONT_KEY_GOTHIC_18_BOLD), GRect(gear_rect.origin.x, gear_rect.origin.y, gear_rect.size.w, gear_rect.size.h), GTextOverflowModeTrailingEllipsis, GTextAlignmentCenter, NULL);
+
+#elif  defined(PBL_PLATFORM_GABBRO)
 #define MARGINE 4
 #define ROUND_FIX 35
+
     graphics_context_set_fill_color(ctx, GColorBulgarianRose);
     graphics_fill_rect(ctx, GRect(ROUND_FIX + MARGINE, ROUND_FIX + MARGINE, 44, 20), icon_size / 2, GCornersAll);
     graphics_context_set_text_color(ctx, GColorWhite);
@@ -235,7 +265,7 @@ Layer* navigation_create_map_layer(GRect bounds)
         s_bitmap_data_size = MAX_BITMAP_DATA_SIZE;
     }
 
-#ifdef PBL_PLATFORM_FLINT
+#ifdef PBL_BW
     s_bitmap = gbitmap_create_blank(GSize(s_bitmap_width, s_bitmap_height), GBitmapFormat2BitPalette);
     s_bitmap_data_size /= 4;
 #else

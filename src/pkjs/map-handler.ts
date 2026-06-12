@@ -20,7 +20,6 @@ type PartialMapState = Partial<MapState>;
 
 const ENABLE_LOGS = false;
 const DEFAULT_ZOOM = 16;
-const DEFAULT_MODE = 'walking';
 const DEFAULT_CHUNK = 2048;
 
 export const RouteMode = {
@@ -41,7 +40,7 @@ export class MapHandler {
   private sending = false;
   private rendering = false;
   private lastRecalc = 0;
-  private isFlint = false;
+  private isBw = false;
   private rotationMode = false;
   private readonly mapState = new BehaviorSubject<PartialMapState>({});
 
@@ -49,14 +48,25 @@ export class MapHandler {
     const info = Pebble.getActiveWatchInfo();
     let w = 144;
     let h = 168;
-    this.isFlint = info.platform === 'flint';
-    if (info.platform === 'emery') {
-      w = 200;
-      h = 228;
-    } else if (info.platform === 'gabbro') {
-      w = 260;
-      h = 260;
+    this.isBw = ['flint', 'aplite', 'diorite'].indexOf(info.platform) >= 0;
+
+    switch (info.platform) {
+      case 'emery':
+        w = 200;
+        h = 228;
+        break;
+      case 'gabbro':
+        w = 260;
+        h = 260;
+        break;
+      case 'chalk':
+        w = 180;
+        h = 180;
+        break;
+      default:
+        break;
     }
+
     if (ENABLE_LOGS) console.log('Platform=' + info.platform + ' size=' + w + 'x' + h);
 
     this.mapState
@@ -96,7 +106,7 @@ export class MapHandler {
             }
           }
         }),
-        switchMap((state) => from(renderForState(state, this.existingRoute, this.isFlint))),
+        switchMap((state) => from(renderForState(state, this.existingRoute, this.isBw))),
         tap(() => (this.rendering = false)),
         tap((output) => this.onMapRendered(output)),
         catchError((err) => {
@@ -308,17 +318,20 @@ export class MapHandler {
 
       if (units === 'imperial') {
         const mi = d / 1609.344;
-        dict.NAV_INFO_LINE1 = mi >= 0.1 ? `${mi.toFixed(1)} mi  ${time}` : `${Math.round(d / 0.3048)} ft  ${time}`;
+        dict.NAV_INFO_LINE1 =
+          mi >= 0.1 ? `${mi.toFixed(1)} mi  ${time}` : `${Math.round(d / 0.3048)} ft  ${time}`;
       } else {
-        dict.NAV_INFO_LINE1 = d >= 1000 ? `${(d / 1000).toFixed(1)} km  ${time}` : `${Math.round(d)} m  ${time}`;
+        dict.NAV_INFO_LINE1 =
+          d >= 1000 ? `${(d / 1000).toFixed(1)} km  ${time}` : `${Math.round(d)} m  ${time}`;
       }
       dict.ROUTE_ACTIVE = 1;
 
       const ns = output.nextStep;
       if (ns && Math.round(ns.remainingDist) > 0) {
-        const stepDist = units === 'imperial'
-          ? `${Math.round(ns.remainingDist / 0.3048)} ft`
-          : `${Math.round(ns.remainingDist)} m`;
+        const stepDist =
+          units === 'imperial'
+            ? `${Math.round(ns.remainingDist / 0.3048)} ft`
+            : `${Math.round(ns.remainingDist)} m`;
         dict.NAV_INFO_LINE2 = `${ns.step.modifier || ''} ${asciiNormalize(ns.step.name) || ''} (${stepDist})`;
       } else {
         dict.NAV_INFO_LINE2 = '';

@@ -20,7 +20,6 @@ var helper_1 = require("./helper");
 var message_queue_1 = require("./message-queue");
 var ENABLE_LOGS = false;
 var DEFAULT_ZOOM = 16;
-var DEFAULT_MODE = 'walking';
 var DEFAULT_CHUNK = 2048;
 exports.RouteMode = {
     WALKING: 0,
@@ -40,20 +39,28 @@ var MapHandler = /** @class */ (function () {
         this.sending = false;
         this.rendering = false;
         this.lastRecalc = 0;
-        this.isFlint = false;
+        this.isBw = false;
         this.rotationMode = false;
         this.mapState = new rxjs_1.BehaviorSubject({});
         var info = Pebble.getActiveWatchInfo();
         var w = 144;
         var h = 168;
-        this.isFlint = info.platform === 'flint';
-        if (info.platform === 'emery') {
-            w = 200;
-            h = 228;
-        }
-        else if (info.platform === 'gabbro') {
-            w = 260;
-            h = 260;
+        this.isBw = ['flint', 'aplite', 'diorite'].indexOf(info.platform) >= 0;
+        switch (info.platform) {
+            case 'emery':
+                w = 200;
+                h = 228;
+                break;
+            case 'gabbro':
+                w = 260;
+                h = 260;
+                break;
+            case 'chalk':
+                w = 180;
+                h = 180;
+                break;
+            default:
+                break;
         }
         if (ENABLE_LOGS)
             console.log('Platform=' + info.platform + ' size=' + w + 'x' + h);
@@ -76,7 +83,7 @@ var MapHandler = /** @class */ (function () {
                     message_queue_1.messageQueue.enqueue({ NAV_INFO_LINE1: 'Recalculating...', NAV_INFO_LINE2: '', ROUTE_ACTIVE: 0 }, function () { }, function (err) { return console.error('Recalculating send failed: ' + err.error); });
                 }
             }
-        }), (0, rxjs_1.switchMap)(function (state) { return (0, rxjs_1.from)((0, stateRenderer_1.renderForState)(state, _this.existingRoute, _this.isFlint)); }), (0, rxjs_1.tap)(function () { return (_this.rendering = false); }), (0, rxjs_1.tap)(function (output) { return _this.onMapRendered(output); }), (0, rxjs_1.catchError)(function (err) {
+        }), (0, rxjs_1.switchMap)(function (state) { return (0, rxjs_1.from)((0, stateRenderer_1.renderForState)(state, _this.existingRoute, _this.isBw)); }), (0, rxjs_1.tap)(function () { return (_this.rendering = false); }), (0, rxjs_1.tap)(function (output) { return _this.onMapRendered(output); }), (0, rxjs_1.catchError)(function (err) {
             console.error('Map pipeline error:', err);
             _this.rendering = false;
             return rxjs_1.EMPTY;
@@ -230,10 +237,12 @@ var MapHandler = /** @class */ (function () {
             var time = h > 0 ? (mins > 0 ? "".concat(h, " h ").concat(mins, " min") : "".concat(h, " h")) : "".concat(m, " min");
             if (units === 'imperial') {
                 var mi = d / 1609.344;
-                dict.NAV_INFO_LINE1 = mi >= 0.1 ? "".concat(mi.toFixed(1), " mi  ").concat(time) : "".concat(Math.round(d / 0.3048), " ft  ").concat(time);
+                dict.NAV_INFO_LINE1 =
+                    mi >= 0.1 ? "".concat(mi.toFixed(1), " mi  ").concat(time) : "".concat(Math.round(d / 0.3048), " ft  ").concat(time);
             }
             else {
-                dict.NAV_INFO_LINE1 = d >= 1000 ? "".concat((d / 1000).toFixed(1), " km  ").concat(time) : "".concat(Math.round(d), " m  ").concat(time);
+                dict.NAV_INFO_LINE1 =
+                    d >= 1000 ? "".concat((d / 1000).toFixed(1), " km  ").concat(time) : "".concat(Math.round(d), " m  ").concat(time);
             }
             dict.ROUTE_ACTIVE = 1;
             var ns = output.nextStep;

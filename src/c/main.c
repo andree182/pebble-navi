@@ -159,6 +159,8 @@ static void main_window_load(Window* window)
 
 #ifdef PBL_PLATFORM_GABBRO
 #define OFFSET 30
+#elif  defined(PBL_PLATFORM_CHALK)
+#define OFFSET 20
 #else
 #define OFFSET 0
 #endif

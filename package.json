@@ -44,7 +44,11 @@
     "targetPlatforms": [
       "emery",
       "gabbro",
-      "flint"
+      "flint",
+      "aplite",
+      "diorite",
+      "chalk",
+      "basalt"
     ],
     "uuid": "64f06958-8a2e-4709-b672-0c3a859e7914",
     "watchapp": {
@@ -56,9 +60,10 @@
     "tsc": "tsc",
     "build": "tsc; pebble build",
     "start": "npx tsc; pebble build; pebble install --emulator emery",
-    "debug-duo": "pkill -x qemu-pebble; sleep 1; pebble wipe; pebble clean; npx tsc; pebble build; pebble install --emulator flint; pebble logs --emulator flint",
+    "debug-duo": "pkill -x qemu-pebmainble; sleep 1; pebble wipe; pebble clean; npx tsc; pebble build; pebble install --emulator flint; pebble logs --emulator flint",
     "debug-time-2": "pkill -x qemu-pebble; sleep 1; pebble wipe; pebble clean; npx tsc; pebble build; pebble install --emulator emery; pebble logs --emulator emery",
     "debug-round-2": "pkill -x qemu-pebble; sleep 1; pebble wipe; pebble clean; npx tsc; pebble build; pebble install --emulator gabbro; pebble logs --emulator gabbro",
+    "debug-round": "pkill -x qemu-pebble; sleep 1; pebble wipe; pebble clean; npx tsc; pebble build; pebble install --emulator chalk; pebble logs --emulator chalk",
     "screenshot": "pebble screenshot screenshot.png",
     "push": "npx tsc; pebble build; pebble install --phone",
     "wipe": "pebble wipe",
