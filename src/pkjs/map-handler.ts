@@ -165,6 +165,7 @@ export class MapHandler {
   public selectRoute(destination: Destination): void {
     if (ENABLE_LOGS) console.info('selectRoute', JSON.stringify(destination));
 
+    this.existingRoute = undefined;
     const state = this.mapState.value;
 
     this.mapState.next({
