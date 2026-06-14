@@ -18,7 +18,7 @@ import { messageQueue } from './message-queue';
 
 type PartialMapState = Partial<MapState>;
 
-const ENABLE_LOGS = true;
+const ENABLE_LOGS = false;
 const DEFAULT_ZOOM = 16;
 const DEFAULT_CHUNK = 1024;
 
