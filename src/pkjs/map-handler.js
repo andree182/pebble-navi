@@ -18,7 +18,7 @@ var stateRenderer_1 = require("./server/stateRenderer");
 var routing_1 = require("./server/routing");
 var helper_1 = require("./helper");
 var message_queue_1 = require("./message-queue");
-var ENABLE_LOGS = true;
+var test_data_1 = require("./test-data");
 var DEFAULT_ZOOM = 16;
 var DEFAULT_CHUNK = 1024;
 exports.RouteMode = {
@@ -72,7 +72,7 @@ var MapHandler = /** @class */ (function () {
             default:
                 break;
         }
-        if (ENABLE_LOGS)
+        if (test_data_1.ENABLE_LOGS)
             console.log('Platform=' + info.platform + ' model=' + info.model + ' size=' + w + 'x' + h);
         this.isEmulator = (info.model && info.model.indexOf('qemu') !== -1) || false;
         this.mapState
@@ -111,7 +111,7 @@ var MapHandler = /** @class */ (function () {
         if (this.isEmulator)
             return;
         this.chunk_size = Math.max(DEFAULT_CHUNK, size - 128);
-        if (ENABLE_LOGS)
+        if (test_data_1.ENABLE_LOGS)
             console.log('Chunk size set to', size);
     };
     MapHandler.prototype.getRouteMode = function () {
@@ -127,12 +127,12 @@ var MapHandler = /** @class */ (function () {
     };
     MapHandler.prototype.updatePosition = function (pos) {
         var _a;
-        if (ENABLE_LOGS)
+        if (test_data_1.ENABLE_LOGS)
             console.info('updatePosition', JSON.stringify(pos));
         this.mapState.next(__assign(__assign({}, this.mapState.value), { currentPos: { lat: pos.coords.latitude, lng: pos.coords.longitude }, bearing: (_a = pos.coords.heading) !== null && _a !== void 0 ? _a : undefined }));
     };
     MapHandler.prototype.selectRoute = function (destination) {
-        if (ENABLE_LOGS)
+        if (test_data_1.ENABLE_LOGS)
             console.info('selectRoute', JSON.stringify(destination));
         this.existingRoute = undefined;
         var state = this.mapState.value;
@@ -142,7 +142,7 @@ var MapHandler = /** @class */ (function () {
         return this.mapState.value.currentPos;
     };
     MapHandler.prototype.resetRoute = function () {
-        if (ENABLE_LOGS)
+        if (test_data_1.ENABLE_LOGS)
             console.info('resetRoute');
         this.existingRoute = undefined;
         this.mapState.next(__assign(__assign({}, this.mapState.value), { dest: undefined, origin: undefined }));
@@ -165,7 +165,7 @@ var MapHandler = /** @class */ (function () {
         (0, helper_1.saveSettings)({ zoom: s.zoom, mode: s.mode, rotationMode: enabled });
     };
     MapHandler.prototype.zoom = function (zoom) {
-        if (ENABLE_LOGS)
+        if (test_data_1.ENABLE_LOGS)
             console.info('zoom', zoom);
         var state = this.mapState.value;
         var newZoom = state.zoom ? state.zoom + zoom : DEFAULT_ZOOM;
@@ -194,7 +194,7 @@ var MapHandler = /** @class */ (function () {
         var chunkSize = this.chunk_size;
         var compressed = (0, helper_1.encodeAdaptive)(pixels);
         var totalChunks = Math.ceil(compressed.length / chunkSize);
-        if (ENABLE_LOGS)
+        if (test_data_1.ENABLE_LOGS)
             console.log('sendBitmapToWatch: pixels=' +
                 pixels.length +
                 ' bytes, compressed=' +
@@ -206,7 +206,7 @@ var MapHandler = /** @class */ (function () {
             if (retries === void 0) { retries = MAX_RETRIES; }
             if (index >= totalChunks) {
                 _this.sending = false;
-                if (ENABLE_LOGS)
+                if (test_data_1.ENABLE_LOGS)
                     console.log('Finished sending chunk ' + totalChunks);
                 return;
             }
@@ -216,7 +216,7 @@ var MapHandler = /** @class */ (function () {
             for (var i = start; i < end; i++) {
                 bytes.push(compressed[i]);
             }
-            if (ENABLE_LOGS)
+            if (test_data_1.ENABLE_LOGS)
                 console.log('Sending chunk ' + index + '/' + totalChunks + ' (' + bytes.length + ' bytes)');
             message_queue_1.messageQueue.enqueue({
                 IMAGE_CHUNK_INDEX: index,
@@ -224,13 +224,13 @@ var MapHandler = /** @class */ (function () {
                 IMAGE_CHUNK_DATA: bytes,
             }, function () {
                 sendChunk(index + 1);
-                if (ENABLE_LOGS)
+                if (test_data_1.ENABLE_LOGS)
                     console.log('Chunk ' + index + ' acked');
             }, function (err) {
                 console.error('Chunk ' + index + ' failed: ' + JSON.stringify(err.error));
                 if (retries > 0) {
                     var delay = (MAX_RETRIES - retries + 1) * 1000;
-                    if (ENABLE_LOGS)
+                    if (test_data_1.ENABLE_LOGS)
                         console.log('Retrying chunk ' + index + ' in ' + delay + 'ms (' + retries + ' retries left)');
                     setTimeout(function () { return sendChunk(index, retries - 1); }, delay);
                 }

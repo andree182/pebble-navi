@@ -8,7 +8,6 @@ var destionations_1 = require("./destionations");
 var map_handler_1 = require("./map-handler");
 var message_queue_1 = require("./message-queue");
 var test_data_1 = require("./test-data");
-var ENABLE_LOGS = false;
 console.log('JS App Started');
 var destroyApp = new rxjs_1.Subject();
 var location = new rxjs_1.Subject();
@@ -19,7 +18,7 @@ var mapHandler;
     .pipe((0, rxjs_1.map)(function (event) { return event.payload; }))
     .subscribe(function (payload) {
     try {
-        if (ENABLE_LOGS)
+        if (test_data_1.ENABLE_LOGS)
             console.log('AppMessage received', JSON.stringify(payload));
         if (payload.REQUEST_DESTINATIONS !== undefined) {
             (0, destionations_1.sendDestinationsToWatch)();
@@ -112,7 +111,7 @@ var mapHandler;
             ROTATION_MODE: mapHandler.getRotationMode() ? 1 : 0,
         }, function () { }, function (err) { return console.error('Initial state send failed: ' + err.error); });
         location.pipe((0, rxjs_1.takeUntil)(destroyApp)).subscribe(function (pos) {
-            if (ENABLE_LOGS)
+            if (test_data_1.ENABLE_LOGS)
                 console.log('geolocation event', JSON.stringify(pos));
             mapHandler === null || mapHandler === void 0 ? void 0 : mapHandler.updatePosition(pos);
         });

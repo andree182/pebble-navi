@@ -1,9 +1,10 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.TEST_DESTINATIONS = void 0;
+exports.TEST_DESTINATIONS = exports.ENABLE_LOGS = void 0;
 exports.testOverride = testOverride;
 exports.testAutoMove = testAutoMove;
 var rxjs_1 = require("rxjs");
+exports.ENABLE_LOGS = false;
 var DO_TESTING = false;
 exports.TEST_DESTINATIONS = DO_TESTING
     ? [

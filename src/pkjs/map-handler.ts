@@ -15,10 +15,9 @@ import { Destination } from './index';
 import { distanceToRoute, RouteResult } from './server/routing';
 import { asciiNormalize, encodeAdaptive, loadSettings, loadUnits, saveSettings } from './helper';
 import { messageQueue } from './message-queue';
+import { ENABLE_LOGS } from './test-data';
 
 type PartialMapState = Partial<MapState>;
-
-const ENABLE_LOGS = false;
 const DEFAULT_ZOOM = 16;
 const DEFAULT_CHUNK = 1024;
 

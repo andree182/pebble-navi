@@ -1,4 +1,4 @@
-const ENABLE_LOGS = false;
+import { ENABLE_LOGS } from './test-data';
 
 interface QueuedMessage {
   data: Record<string, any>;

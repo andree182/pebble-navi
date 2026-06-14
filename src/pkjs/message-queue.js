@@ -1,7 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.messageQueue = void 0;
-var ENABLE_LOGS = false;
+var test_data_1 = require("./test-data");
 var MessageQueue = /** @class */ (function () {
     function MessageQueue() {
         this.queue = [];
@@ -22,7 +22,7 @@ var MessageQueue = /** @class */ (function () {
         }
         var message = this.queue.shift();
         this.sending = true;
-        if (ENABLE_LOGS)
+        if (test_data_1.ENABLE_LOGS)
             console.info('Sending message', Object.keys(message.data));
         this.sendTimer = setTimeout(function () {
             if (_this.sending) {

@@ -5,9 +5,7 @@ import { fromEvent, map, Subject, takeUntil, tap } from 'rxjs';
 import { sendDestinationsToWatch } from './destionations';
 import { MapHandler } from './map-handler';
 import { messageQueue } from './message-queue';
-import { testAutoMove, testOverride } from './test-data';
-
-const ENABLE_LOGS = false;
+import { ENABLE_LOGS, testAutoMove, testOverride } from './test-data';
 
 console.log('JS App Started');
 

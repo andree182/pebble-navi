@@ -1,6 +1,7 @@
 import { interval, Subject } from 'rxjs';
 
-const DO_TESTING: boolean = false;
+export const ENABLE_LOGS = false;
+export const DO_TESTING: boolean = false;
 
 export const TEST_DESTINATIONS = DO_TESTING
   ? [
