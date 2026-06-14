@@ -58,8 +58,9 @@
   },
   "version": "1.1.2",
   "scripts": {
+    "pretsc": "echo \"export const VERSION = '$npm_package_version';\" > src/pkjs/version.ts",
     "tsc": "tsc",
-    "build": "tsc; pebble build",
+    "build": "npm run pretsc && npm run tsc; pebble build",
     "start": "npx tsc; pebble build; pebble install --emulator emery",
     "debug-duo": "pkill -x qemu-pebmainble; sleep 1; pebble wipe; pebble clean; npx tsc; pebble build; pebble install --emulator flint; pebble logs --emulator flint",
     "debug-time-2": "pkill -x qemu-pebble; sleep 1; pebble wipe; pebble clean; npx tsc; pebble build; pebble install --emulator emery; pebble logs --emulator emery",

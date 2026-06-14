@@ -1,9 +1,11 @@
 import { Destination } from './index';
-import { TEST_DESTINATIONS } from './test-data';
+import { ENABLE_LOGS, TEST_DESTINATIONS } from './test-data';
 
 const DESTINATIONS_KEY = 'destinations';
 const UNITS_KEY = 'units';
 const SETTINGS_KEY = 'nav_settings';
+const TELEMETRY_KEY = 'telemetry_enabled';
+const EXPERIMENTAL_KEY = 'experimental_enabled';
 
 export interface NavSettings {
   zoom: number;
@@ -31,6 +33,22 @@ export function loadUnits(): string {
 
 export function saveUnits(units: string): void {
   localStorage.setItem(UNITS_KEY, units);
+}
+
+export function loadTelemetryEnabled(): boolean {
+  return localStorage.getItem(TELEMETRY_KEY) === 'true';
+}
+
+export function saveTelemetryEnabled(enabled: boolean): void {
+  localStorage.setItem(TELEMETRY_KEY, enabled ? 'true' : 'false');
+}
+
+export function loadExperimentalEnabled(): boolean {
+  return localStorage.getItem(EXPERIMENTAL_KEY) === 'true';
+}
+
+export function saveExperimentalEnabled(enabled: boolean): void {
+  localStorage.setItem(EXPERIMENTAL_KEY, enabled ? 'true' : 'false');
 }
 
 export function loadDestinations(): Destination[] {
@@ -87,8 +105,12 @@ export function encodeLZSS(data: Uint8Array, window: number): Uint8Array {
 }
 
 export function encodeAdaptive(pixels: Uint8Array): Uint8Array {
+  if (ENABLE_LOGS) console.time('encodeHoffmannXL');
   const xl = encodeHoffmannXL(pixels);
+  if (ENABLE_LOGS) console.timeEnd('encodeHoffmannXL');
+  if (ENABLE_LOGS) console.time('encodeLZSS');
   const lzss = encodeLZSS(pixels, 255);
+  if (ENABLE_LOGS) console.timeEnd('encodeLZSS');
   const best = lzss.length < xl.length ? lzss : xl;
   const out = new Uint8Array(1 + best.length);
   out[0] = best === lzss ? 1 : 0;

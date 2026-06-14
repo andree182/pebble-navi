@@ -8,6 +8,8 @@ var destionations_1 = require("./destionations");
 var map_handler_1 = require("./map-handler");
 var message_queue_1 = require("./message-queue");
 var test_data_1 = require("./test-data");
+var telemetry_1 = require("./telemetry");
+(0, telemetry_1.initTelemetry)();
 console.log('JS App Started');
 var destroyApp = new rxjs_1.Subject();
 var location = new rxjs_1.Subject();
@@ -19,7 +21,7 @@ var mapHandler;
     .subscribe(function (payload) {
     try {
         if (test_data_1.ENABLE_LOGS)
-            console.log('AppMessage received', JSON.stringify(payload));
+            console.log('AppMessage received');
         if (payload.REQUEST_DESTINATIONS !== undefined) {
             (0, destionations_1.sendDestinationsToWatch)();
         }
@@ -83,10 +85,11 @@ var mapHandler;
     }
 });
 (0, rxjs_1.fromEvent)(Pebble, 'webviewclosed').subscribe(function (e) {
-    console.log('webviewclosed event', JSON.stringify(e));
+    console.log('webviewclosed event');
     try {
         if (e.response)
             (0, settings_1.saveSettings)(e.response);
+        (0, telemetry_1.flushTelemetry)();
     }
     catch (e) {
         console.error(e);
@@ -104,6 +107,7 @@ var mapHandler;
     .subscribe(function () {
     try {
         console.log('PebbleKit JS ready! Setting up new session.');
+        (0, telemetry_1.setWatchInfo)(Pebble.getActiveWatchInfo());
         mapHandler = new map_handler_1.MapHandler(destroyApp);
         // Sync saved settings to watch on connect
         message_queue_1.messageQueue.enqueue({
@@ -112,7 +116,7 @@ var mapHandler;
         }, function () { }, function (err) { return console.error('Initial state send failed: ' + err.error); });
         location.pipe((0, rxjs_1.takeUntil)(destroyApp)).subscribe(function (pos) {
             if (test_data_1.ENABLE_LOGS)
-                console.log('geolocation event', JSON.stringify(pos));
+                console.log('geolocation event');
             mapHandler === null || mapHandler === void 0 ? void 0 : mapHandler.updatePosition(pos);
         });
         navigationWatcher = navigator.geolocation.watchPosition(function (pos) { return location.next((0, test_data_1.testOverride)(pos)); }, console.error, {

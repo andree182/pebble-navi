@@ -13,13 +13,20 @@ import {
 import { MapState, renderForState, RenderOutput } from './server/stateRenderer';
 import { Destination } from './index';
 import { distanceToRoute, RouteResult } from './server/routing';
-import { asciiNormalize, encodeAdaptive, loadSettings, loadUnits, saveSettings } from './helper';
+import {
+  asciiNormalize,
+  encodeAdaptive,
+  loadExperimentalEnabled,
+  loadSettings,
+  loadUnits,
+  saveSettings,
+} from './helper';
 import { messageQueue } from './message-queue';
 import { ENABLE_LOGS } from './test-data';
 
 type PartialMapState = Partial<MapState>;
 const DEFAULT_ZOOM = 16;
-const DEFAULT_CHUNK = 1024;
+const DEFAULT_CHUNK = 2000;
 
 export const RouteMode = {
   WALKING: 0,
@@ -118,9 +125,19 @@ export class MapHandler {
             }
           }
         }),
-        switchMap((state) =>
-          from(renderForState(state, this.existingRoute, this.isBw, this.userVerticalOffset)),
-        ),
+        switchMap((state) => {
+          if (ENABLE_LOGS) {
+            console.time('renderForState');
+            console.time('pipeline');
+          }
+          return from(
+            renderForState(state, this.existingRoute, this.isBw, this.userVerticalOffset),
+          ).pipe(
+            tap(() => {
+              if (ENABLE_LOGS) console.timeEnd('renderForState');
+            }),
+          );
+        }),
         tap(() => (this.rendering = false)),
         tap((output) => this.onMapRendered(output)),
         catchError((err) => {
@@ -146,6 +163,7 @@ export class MapHandler {
 
   public setChunkSize(size: number): void {
     if (this.isEmulator) return;
+    if (!loadExperimentalEnabled()) return;
     this.chunk_size = Math.max(DEFAULT_CHUNK, size - 128);
     if (ENABLE_LOGS) console.log('Chunk size set to', size);
   }
@@ -162,7 +180,7 @@ export class MapHandler {
   }
 
   public updatePosition(pos: GeolocationPosition): void {
-    if (ENABLE_LOGS) console.info('updatePosition', JSON.stringify(pos));
+    if (ENABLE_LOGS) console.info('updatePosition');
 
     this.mapState.next({
       ...this.mapState.value,
@@ -172,7 +190,7 @@ export class MapHandler {
   }
 
   public selectRoute(destination: Destination): void {
-    if (ENABLE_LOGS) console.info('selectRoute', JSON.stringify(destination));
+    if (ENABLE_LOGS) console.info('selectRoute');
 
     this.existingRoute = undefined;
     const state = this.mapState.value;
@@ -261,7 +279,9 @@ export class MapHandler {
     this.sending = true;
 
     const chunkSize = this.chunk_size;
+    if (ENABLE_LOGS) console.time('compress');
     const compressed = encodeAdaptive(pixels);
+    if (ENABLE_LOGS) console.timeEnd('compress');
     const totalChunks = Math.ceil(compressed.length / chunkSize);
     if (ENABLE_LOGS)
       console.log(
@@ -275,10 +295,16 @@ export class MapHandler {
 
     const MAX_RETRIES = 3;
 
+    if (ENABLE_LOGS) console.time('sendBitmap');
+
     const sendChunk = (index: number, retries: number = MAX_RETRIES): void => {
       if (index >= totalChunks) {
         this.sending = false;
-        if (ENABLE_LOGS) console.log('Finished sending chunk ' + totalChunks);
+        if (ENABLE_LOGS) {
+          console.timeEnd('sendBitmap');
+          console.timeEnd('pipeline');
+          console.log('Finished sending chunk ' + totalChunks);
+        }
         return;
       }
 

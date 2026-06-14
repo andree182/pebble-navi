@@ -6,6 +6,8 @@ var helper_1 = require("./helper");
 function buildSettings() {
     var destinations = (0, helper_1.loadDestinations)();
     var units = (0, helper_1.loadUnits)();
+    var telemetry = (0, helper_1.loadTelemetryEnabled)();
+    var experimental = (0, helper_1.loadExperimentalEnabled)();
     var html = '';
     html +=
         '<!DOCTYPE html><html><head><meta name="viewport" content="width=device-width, initial-scale=1">';
@@ -45,13 +47,39 @@ function buildSettings() {
     html += '<button onclick="addDest()">Add Destination</button>';
     html += '<div class="section-title">Units</div>';
     html += '<div style="display:flex;gap:8px;margin:8px 0">';
-    html += '<label style="flex:1;text-align:center;padding:8px;background:#0f3460;border-radius:6px;cursor:pointer">';
-    html += '<input type="radio" name="units" value="metric"' + (units === 'metric' ? ' checked' : '') + '> km / m';
+    html +=
+        '<label style="flex:1;text-align:center;padding:8px;background:#0f3460;border-radius:6px;cursor:pointer">';
+    html +=
+        '<input type="radio" name="units" value="metric"' +
+            (units === 'metric' ? ' checked' : '') +
+            '> km / m';
     html += '</label>';
-    html += '<label style="flex:1;text-align:center;padding:8px;background:#0f3460;border-radius:6px;cursor:pointer">';
-    html += '<input type="radio" name="units" value="imperial"' + (units === 'imperial' ? ' checked' : '') + '> mi / ft';
+    html +=
+        '<label style="flex:1;text-align:center;padding:8px;background:#0f3460;border-radius:6px;cursor:pointer">';
+    html +=
+        '<input type="radio" name="units" value="imperial"' +
+            (units === 'imperial' ? ' checked' : '') +
+            '> mi / ft';
     html += '</label>';
     html += '</div>';
+    html += '<div class="section-title">Telemetry</div>';
+    html +=
+        '<label style="display:flex;align-items:center;gap:8px;padding:8px;background:#0f3460;border-radius:6px;cursor:pointer;margin:8px 0">';
+    html +=
+        '<input type="checkbox" id="telemetry"' +
+            (telemetry ? ' checked' : '') +
+            '> Send anonymous usage data (logs, errors) to improve the app, no coordinates or destination names are send';
+    html += '</label>';
+    html += '<div class="section-title">Experimental</div>';
+    html +=
+        '<label style="display:flex;align-items:center;gap:8px;padding:8px;background:#0f3460;border-radius:6px;cursor:pointer;margin:8px 0">';
+    html +=
+        '<input type="checkbox" id="experimental"' +
+            (experimental ? ' checked' : '') +
+            '> Maximize message size for faster map updates, needs app restart (may be unstable)';
+    html +=
+        '<div class="notice">This option tries to maximize the size of the messages sent to the watch, improving map update speed, but the behavior can lead to the app not updating at all. Sadly the emulator and real hardware behave differently. Please try this option and enable telemetry so I can make sure it works on every Pebble watch, not just my Time 2.</div>';
+    html += '</label>';
     html += '<button onclick="saveAndClose()">Save & Close</button>';
     html += '<div class="section-title">Attributions</div>';
     html +=
@@ -74,7 +102,7 @@ function buildSettings() {
     html +=
         'function addDest(){var addr=document.getElementById("addr").value.trim();if(!addr)return;var nm=document.getElementById("name").value.trim();var parts=addr.split(",").map(function(s){return parseFloat(s.trim())});if(parts.length===2&&!isNaN(parts[0])&&!isNaN(parts[1])){dests.push({lat:parts[0],lng:parts[1],name:nm||addr});document.getElementById("addr").value="";document.getElementById("name").value="";render();return}var xhr=new XMLHttpRequest();xhr.open("GET","https://photon.komoot.io/api/?q="+encodeURIComponent(addr)+"&limit=1",true);xhr.onload=function(){if(xhr.status>=200&&xhr.status<300){var d=JSON.parse(xhr.responseText);if(d.features&&d.features.length){var c=d.features[0].geometry.coordinates;dests.push({lat:c[1],lng:c[0],name:nm||d.features[0].properties.name||addr});document.getElementById("addr").value="";document.getElementById("name").value="";render()}else{alert("Not found")}}};xhr.send()}';
     html +=
-        'function saveAndClose(){var u=document.querySelector(\'input[name="units"]:checked\');var payload={destinations:dests,units:u?u.value:"metric"};document.location="pebblejs://close#"+encodeURIComponent(JSON.stringify(payload))}';
+        'function saveAndClose(){var u=document.querySelector(\'input[name="units"]:checked\');var t=document.getElementById("telemetry").checked;var e=document.getElementById("experimental").checked;var payload={destinations:dests,units:u?u.value:"metric",telemetry_enabled:t,experimental_enabled:e};document.location="pebblejs://close#"+encodeURIComponent(JSON.stringify(payload))}';
     html += 'render();';
     html += '<\/script></body></html>';
     return html;
@@ -87,6 +115,12 @@ function saveSettings(response) {
         }
         if (data.units) {
             (0, helper_1.saveUnits)(data.units);
+        }
+        if (data.telemetry_enabled !== undefined) {
+            (0, helper_1.saveTelemetryEnabled)(data.telemetry_enabled);
+        }
+        if (data.experimental_enabled !== undefined) {
+            (0, helper_1.saveExperimentalEnabled)(data.experimental_enabled);
         }
     }
     catch (err) {

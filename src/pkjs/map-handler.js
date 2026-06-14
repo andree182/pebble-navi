@@ -20,7 +20,7 @@ var helper_1 = require("./helper");
 var message_queue_1 = require("./message-queue");
 var test_data_1 = require("./test-data");
 var DEFAULT_ZOOM = 16;
-var DEFAULT_CHUNK = 1024;
+var DEFAULT_CHUNK = 2000;
 exports.RouteMode = {
     WALKING: 0,
     CYCLING: 1,
@@ -95,7 +95,14 @@ var MapHandler = /** @class */ (function () {
                 }
             }
         }), (0, rxjs_1.switchMap)(function (state) {
-            return (0, rxjs_1.from)((0, stateRenderer_1.renderForState)(state, _this.existingRoute, _this.isBw, _this.userVerticalOffset));
+            if (test_data_1.ENABLE_LOGS) {
+                console.time('renderForState');
+                console.time('pipeline');
+            }
+            return (0, rxjs_1.from)((0, stateRenderer_1.renderForState)(state, _this.existingRoute, _this.isBw, _this.userVerticalOffset)).pipe((0, rxjs_1.tap)(function () {
+                if (test_data_1.ENABLE_LOGS)
+                    console.timeEnd('renderForState');
+            }));
         }), (0, rxjs_1.tap)(function () { return (_this.rendering = false); }), (0, rxjs_1.tap)(function (output) { return _this.onMapRendered(output); }), (0, rxjs_1.catchError)(function (err) {
             console.error('Map pipeline error:', err);
             _this.rendering = false;
@@ -109,6 +116,8 @@ var MapHandler = /** @class */ (function () {
     }
     MapHandler.prototype.setChunkSize = function (size) {
         if (this.isEmulator)
+            return;
+        if (!(0, helper_1.loadExperimentalEnabled)())
             return;
         this.chunk_size = Math.max(DEFAULT_CHUNK, size - 128);
         if (test_data_1.ENABLE_LOGS)
@@ -128,12 +137,12 @@ var MapHandler = /** @class */ (function () {
     MapHandler.prototype.updatePosition = function (pos) {
         var _a;
         if (test_data_1.ENABLE_LOGS)
-            console.info('updatePosition', JSON.stringify(pos));
+            console.info('updatePosition');
         this.mapState.next(__assign(__assign({}, this.mapState.value), { currentPos: { lat: pos.coords.latitude, lng: pos.coords.longitude }, bearing: (_a = pos.coords.heading) !== null && _a !== void 0 ? _a : undefined }));
     };
     MapHandler.prototype.selectRoute = function (destination) {
         if (test_data_1.ENABLE_LOGS)
-            console.info('selectRoute', JSON.stringify(destination));
+            console.info('selectRoute');
         this.existingRoute = undefined;
         var state = this.mapState.value;
         this.mapState.next(__assign(__assign({}, state), { dest: destination, origin: state.currentPos }));
@@ -192,7 +201,11 @@ var MapHandler = /** @class */ (function () {
         }
         this.sending = true;
         var chunkSize = this.chunk_size;
+        if (test_data_1.ENABLE_LOGS)
+            console.time('compress');
         var compressed = (0, helper_1.encodeAdaptive)(pixels);
+        if (test_data_1.ENABLE_LOGS)
+            console.timeEnd('compress');
         var totalChunks = Math.ceil(compressed.length / chunkSize);
         if (test_data_1.ENABLE_LOGS)
             console.log('sendBitmapToWatch: pixels=' +
@@ -202,12 +215,17 @@ var MapHandler = /** @class */ (function () {
                 ', chunks=' +
                 totalChunks);
         var MAX_RETRIES = 3;
+        if (test_data_1.ENABLE_LOGS)
+            console.time('sendBitmap');
         var sendChunk = function (index, retries) {
             if (retries === void 0) { retries = MAX_RETRIES; }
             if (index >= totalChunks) {
                 _this.sending = false;
-                if (test_data_1.ENABLE_LOGS)
+                if (test_data_1.ENABLE_LOGS) {
+                    console.timeEnd('sendBitmap');
+                    console.timeEnd('pipeline');
                     console.log('Finished sending chunk ' + totalChunks);
+                }
                 return;
             }
             var start = index * chunkSize;

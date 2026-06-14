@@ -4,6 +4,10 @@ exports.loadSettings = loadSettings;
 exports.saveSettings = saveSettings;
 exports.loadUnits = loadUnits;
 exports.saveUnits = saveUnits;
+exports.loadTelemetryEnabled = loadTelemetryEnabled;
+exports.saveTelemetryEnabled = saveTelemetryEnabled;
+exports.loadExperimentalEnabled = loadExperimentalEnabled;
+exports.saveExperimentalEnabled = saveExperimentalEnabled;
 exports.loadDestinations = loadDestinations;
 exports.saveDestinations = saveDestinations;
 exports.encodeLZSS = encodeLZSS;
@@ -14,6 +18,8 @@ var test_data_1 = require("./test-data");
 var DESTINATIONS_KEY = 'destinations';
 var UNITS_KEY = 'units';
 var SETTINGS_KEY = 'nav_settings';
+var TELEMETRY_KEY = 'telemetry_enabled';
+var EXPERIMENTAL_KEY = 'experimental_enabled';
 function loadSettings() {
     try {
         var saved = localStorage.getItem(SETTINGS_KEY);
@@ -32,6 +38,18 @@ function loadUnits() {
 }
 function saveUnits(units) {
     localStorage.setItem(UNITS_KEY, units);
+}
+function loadTelemetryEnabled() {
+    return localStorage.getItem(TELEMETRY_KEY) === 'true';
+}
+function saveTelemetryEnabled(enabled) {
+    localStorage.setItem(TELEMETRY_KEY, enabled ? 'true' : 'false');
+}
+function loadExperimentalEnabled() {
+    return localStorage.getItem(EXPERIMENTAL_KEY) === 'true';
+}
+function saveExperimentalEnabled(enabled) {
+    localStorage.setItem(EXPERIMENTAL_KEY, enabled ? 'true' : 'false');
 }
 function loadDestinations() {
     try {
@@ -73,8 +91,8 @@ function encodeLZSS(data, window) {
                 }
             }
             if (bestLen >= MIN_MATCH) {
-                flags |= (1 << (7 - bit));
-                out.push(bestOff & 0xFF, bestLen);
+                flags |= 1 << (7 - bit);
+                out.push(bestOff & 0xff, bestLen);
                 i += bestLen;
             }
             else {
@@ -87,8 +105,16 @@ function encodeLZSS(data, window) {
     return new Uint8Array(out);
 }
 function encodeAdaptive(pixels) {
+    if (test_data_1.ENABLE_LOGS)
+        console.time('encodeHoffmannXL');
     var xl = encodeHoffmannXL(pixels);
+    if (test_data_1.ENABLE_LOGS)
+        console.timeEnd('encodeHoffmannXL');
+    if (test_data_1.ENABLE_LOGS)
+        console.time('encodeLZSS');
     var lzss = encodeLZSS(pixels, 255);
+    if (test_data_1.ENABLE_LOGS)
+        console.timeEnd('encodeLZSS');
     var best = lzss.length < xl.length ? lzss : xl;
     var out = new Uint8Array(1 + best.length);
     out[0] = best === lzss ? 1 : 0;
@@ -105,7 +131,7 @@ function encodeHoffmannXL(data) {
             runLen++;
         }
         if (runLen >= 128) {
-            out.push(0xFF, runLen & 0xFF, (runLen >> 8) & 0xFF, val);
+            out.push(0xff, runLen & 0xff, (runLen >> 8) & 0xff, val);
             i += runLen;
         }
         else if (runLen >= 2) {

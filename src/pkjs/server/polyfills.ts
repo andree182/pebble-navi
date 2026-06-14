@@ -48,6 +48,18 @@ if (typeof _global.fetch === 'undefined') {
   };
 }
 
+const _timers: Record<string, number> = {};
+(console as any).time = function (label: string) {
+  _timers[label] = Date.now();
+};
+(console as any).timeEnd = function (label: string) {
+  const start = _timers[label];
+  if (start !== undefined) {
+    delete _timers[label];
+    console.log(label + ': ' + (Date.now() - start) + 'ms');
+  }
+};
+
 if (typeof btoa === 'undefined') {
   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
   (globalThis as any).btoa = function (s: string) {

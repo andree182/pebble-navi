@@ -6,7 +6,9 @@ import { sendDestinationsToWatch } from './destionations';
 import { MapHandler } from './map-handler';
 import { messageQueue } from './message-queue';
 import { ENABLE_LOGS, testAutoMove, testOverride } from './test-data';
+import { initTelemetry, flushTelemetry, setWatchInfo } from './telemetry';
 
+initTelemetry();
 console.log('JS App Started');
 
 export interface Destination {
@@ -27,7 +29,7 @@ fromEvent(Pebble, 'appmessage')
   .pipe(map((event) => event.payload as any))
   .subscribe((payload) => {
     try {
-      if (ENABLE_LOGS) console.log('AppMessage received', JSON.stringify(payload));
+      if (ENABLE_LOGS) console.log('AppMessage received');
 
       if (payload.REQUEST_DESTINATIONS !== undefined) {
         sendDestinationsToWatch();
@@ -96,9 +98,10 @@ fromEvent(Pebble, 'showConfiguration').subscribe(() => {
 });
 
 fromEvent(Pebble, 'webviewclosed').subscribe((e) => {
-  console.log('webviewclosed event', JSON.stringify(e));
+  console.log('webviewclosed event');
   try {
     if (e.response) saveSettings(e.response);
+    flushTelemetry();
   } catch (e) {
     console.error(e);
   }
@@ -119,6 +122,7 @@ fromEvent(Pebble, 'ready')
   .subscribe(() => {
     try {
       console.log('PebbleKit JS ready! Setting up new session.');
+      setWatchInfo(Pebble.getActiveWatchInfo());
 
       mapHandler = new MapHandler(destroyApp);
 
@@ -133,7 +137,7 @@ fromEvent(Pebble, 'ready')
       );
 
       location.pipe(takeUntil(destroyApp)).subscribe((pos: GeolocationPosition) => {
-        if (ENABLE_LOGS) console.log('geolocation event', JSON.stringify(pos));
+        if (ENABLE_LOGS) console.log('geolocation event');
         mapHandler?.updatePosition(pos);
       });
 

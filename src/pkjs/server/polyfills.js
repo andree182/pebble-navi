@@ -45,6 +45,17 @@ if (typeof _global.fetch === 'undefined') {
         });
     };
 }
+var _timers = {};
+console.time = function (label) {
+    _timers[label] = Date.now();
+};
+console.timeEnd = function (label) {
+    var start = _timers[label];
+    if (start !== undefined) {
+        delete _timers[label];
+        console.log(label + ': ' + (Date.now() - start) + 'ms');
+    }
+};
 if (typeof btoa === 'undefined') {
     var chars_1 = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
     globalThis.btoa = function (s) {

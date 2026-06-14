@@ -1,12 +1,13 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.TEST_DESTINATIONS = exports.ENABLE_LOGS = void 0;
+exports.TEST_DESTINATIONS = exports.DO_TESTING = exports.ENABLE_LOGS = void 0;
 exports.testOverride = testOverride;
 exports.testAutoMove = testAutoMove;
 var rxjs_1 = require("rxjs");
-exports.ENABLE_LOGS = false;
-var DO_TESTING = false;
-exports.TEST_DESTINATIONS = DO_TESTING
+var telemetry_1 = require("./telemetry");
+exports.ENABLE_LOGS = (0, telemetry_1.isTelemetryEnabled)();
+exports.DO_TESTING = false;
+exports.TEST_DESTINATIONS = exports.DO_TESTING
     ? [
         {
             name: 'Brandenburger Tor',
@@ -21,7 +22,7 @@ exports.TEST_DESTINATIONS = DO_TESTING
     ]
     : [];
 function testOverride(pos) {
-    if (!DO_TESTING) {
+    if (!exports.DO_TESTING) {
         return pos;
     }
     pos.coords.latitude = 52.520976307736106;
@@ -29,7 +30,7 @@ function testOverride(pos) {
     return pos;
 }
 function testAutoMove(location) {
-    if (!DO_TESTING) {
+    if (!exports.DO_TESTING) {
         return;
     }
     (0, rxjs_1.interval)(1000).subscribe(function (nbr) {
