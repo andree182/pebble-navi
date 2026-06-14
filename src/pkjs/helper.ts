@@ -73,8 +73,8 @@ export function encodeLZSS(data: Uint8Array, window: number): Uint8Array {
         }
       }
       if (bestLen >= MIN_MATCH) {
-        flags |= (1 << (7 - bit));
-        out.push(bestOff & 0xFF, bestLen);
+        flags |= 1 << (7 - bit);
+        out.push(bestOff & 0xff, bestLen);
         i += bestLen;
       } else {
         out.push(data[i]);
@@ -106,7 +106,7 @@ export function encodeHoffmannXL(data: Uint8Array): Uint8Array {
       runLen++;
     }
     if (runLen >= 128) {
-      out.push(0xFF, runLen & 0xFF, (runLen >> 8) & 0xFF, val);
+      out.push(0xff, runLen & 0xff, (runLen >> 8) & 0xff, val);
       i += runLen;
     } else if (runLen >= 2) {
       out.push(0x80 | (runLen - 1), val);

@@ -44,11 +44,19 @@ export function buildSettings(): string {
   html += '<button onclick="addDest()">Add Destination</button>';
   html += '<div class="section-title">Units</div>';
   html += '<div style="display:flex;gap:8px;margin:8px 0">';
-  html += '<label style="flex:1;text-align:center;padding:8px;background:#0f3460;border-radius:6px;cursor:pointer">';
-  html += '<input type="radio" name="units" value="metric"' + (units === 'metric' ? ' checked' : '') + '> km / m';
+  html +=
+    '<label style="flex:1;text-align:center;padding:8px;background:#0f3460;border-radius:6px;cursor:pointer">';
+  html +=
+    '<input type="radio" name="units" value="metric"' +
+    (units === 'metric' ? ' checked' : '') +
+    '> km / m';
   html += '</label>';
-  html += '<label style="flex:1;text-align:center;padding:8px;background:#0f3460;border-radius:6px;cursor:pointer">';
-  html += '<input type="radio" name="units" value="imperial"' + (units === 'imperial' ? ' checked' : '') + '> mi / ft';
+  html +=
+    '<label style="flex:1;text-align:center;padding:8px;background:#0f3460;border-radius:6px;cursor:pointer">';
+  html +=
+    '<input type="radio" name="units" value="imperial"' +
+    (units === 'imperial' ? ' checked' : '') +
+    '> mi / ft';
   html += '</label>';
   html += '</div>';
   html += '<button onclick="saveAndClose()">Save & Close</button>';
