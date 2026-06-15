@@ -1,12 +1,13 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.TEST_DESTINATIONS = exports.DO_TESTING = exports.ENABLE_LOGS = void 0;
+exports.TEST_DESTINATIONS = exports.DO_MOVEMENT_TESTING = exports.DO_TESTING = exports.ENABLE_LOGS = void 0;
 exports.testOverride = testOverride;
 exports.testAutoMove = testAutoMove;
 var rxjs_1 = require("rxjs");
 var telemetry_1 = require("./telemetry");
 exports.ENABLE_LOGS = (0, telemetry_1.isTelemetryEnabled)();
 exports.DO_TESTING = false;
+exports.DO_MOVEMENT_TESTING = false;
 exports.TEST_DESTINATIONS = exports.DO_TESTING
     ? [
         {
@@ -30,7 +31,7 @@ function testOverride(pos) {
     return pos;
 }
 function testAutoMove(location) {
-    if (!exports.DO_TESTING) {
+    if (!exports.DO_MOVEMENT_TESTING) {
         return;
     }
     (0, rxjs_1.interval)(1000).subscribe(function (nbr) {

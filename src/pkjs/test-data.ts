@@ -3,6 +3,7 @@ import { isTelemetryEnabled } from './telemetry';
 
 export const ENABLE_LOGS = isTelemetryEnabled();
 export const DO_TESTING: boolean = false;
+export const DO_MOVEMENT_TESTING: boolean = false;
 
 export const TEST_DESTINATIONS = DO_TESTING
   ? [
@@ -30,7 +31,7 @@ export function testOverride(pos: GeolocationPosition): GeolocationPosition {
 }
 
 export function testAutoMove(location: Subject<GeolocationPosition>) {
-  if (!DO_TESTING) {
+  if (!DO_MOVEMENT_TESTING) {
     return;
   }
 
