@@ -132,7 +132,7 @@ static void menu_layer_update_proc(Layer* layer, GContext* ctx)
             }
 
             graphics_draw_text(ctx, text,
-                               fonts_get_system_font(FONT_KEY_GOTHIC_24),
+                               fonts_get_system_font(FONT_KEY_GOTHIC_24_BOLD),
                                item_rect, GTextOverflowModeTrailingEllipsis,
                                GTextAlignmentCenter, NULL);
             drawn++;
@@ -167,7 +167,7 @@ static void menu_layer_update_proc(Layer* layer, GContext* ctx)
             }
 
             graphics_draw_text(ctx, s_dest_names[i],
-                               fonts_get_system_font(FONT_KEY_GOTHIC_24),
+                               fonts_get_system_font(FONT_KEY_GOTHIC_24_BOLD),
                                item_rect, GTextOverflowModeTrailingEllipsis,
                                GTextAlignmentCenter, NULL);
         }

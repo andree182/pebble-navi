@@ -353,8 +353,8 @@ export class MapHandler {
     const units = loadUnits();
 
     if (!output.route) {
-      dict.NAV_INFO_LINE1 = 'Select a Destination';
-      dict.NAV_INFO_LINE2 = 'Add new Destinations in App Settings';
+      dict.NAV_INFO_LINE1 = 'Select Destination';
+      dict.NAV_INFO_LINE2 = 'Add Destination in Pebble-App';
       dict.ROUTE_ACTIVE = 0;
     } else {
       const d = output.route.distance;

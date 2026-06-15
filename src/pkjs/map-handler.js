@@ -119,7 +119,7 @@ var MapHandler = /** @class */ (function () {
             return;
         if (!(0, helper_1.loadExperimentalEnabled)())
             return;
-        this.chunk_size = Math.max(DEFAULT_CHUNK, size - 128);
+        //this.chunk_size = Math.max(DEFAULT_CHUNK, size - 128);
         if (test_data_1.ENABLE_LOGS)
             console.log('Chunk size set to', size);
     };
@@ -265,7 +265,7 @@ var MapHandler = /** @class */ (function () {
         var units = (0, helper_1.loadUnits)();
         if (!output.route) {
             dict.NAV_INFO_LINE1 = 'Select a Destination';
-            dict.NAV_INFO_LINE2 = 'Add new Destinations in App Settings';
+            dict.NAV_INFO_LINE2 = 'Add Destination in Pebble-App';
             dict.ROUTE_ACTIVE = 0;
         }
         else {
