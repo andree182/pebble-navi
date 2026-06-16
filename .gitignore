@@ -10,7 +10,3 @@ benchmark/results/
 benchmark/encode.bundle.js
 benchmark/c/decode_bench
 benchmark/c/decode_bench.dSYM/
-
-# Generated version file
-src/pkjs/version.ts
-src/pkjs/version.js
