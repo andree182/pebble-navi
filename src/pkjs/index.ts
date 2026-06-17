@@ -90,7 +90,20 @@ fromEvent(Pebble, 'appmessage')
 fromEvent(Pebble, 'showConfiguration').subscribe(() => {
   console.log('showConfiguration event');
   try {
-    Pebble.openURL('data:text/html,' + encodeURIComponent(buildSettings()));
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        Pebble.openURL(
+          'data:text/html,' +
+            encodeURIComponent(
+              buildSettings(pos.coords.latitude, pos.coords.longitude),
+            ),
+        );
+      },
+      () => {
+        Pebble.openURL('data:text/html,' + encodeURIComponent(buildSettings()));
+      },
+      { enableHighAccuracy: false, timeout: 5000 },
+    );
   } catch (e) {
     console.error(e);
   }

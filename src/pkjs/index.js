@@ -77,7 +77,12 @@ var mapHandler;
 (0, rxjs_1.fromEvent)(Pebble, 'showConfiguration').subscribe(function () {
     console.log('showConfiguration event');
     try {
-        Pebble.openURL('data:text/html,' + encodeURIComponent((0, settings_1.buildSettings)()));
+        navigator.geolocation.getCurrentPosition(function (pos) {
+            Pebble.openURL('data:text/html,' +
+                encodeURIComponent((0, settings_1.buildSettings)(pos.coords.latitude, pos.coords.longitude)));
+        }, function () {
+            Pebble.openURL('data:text/html,' + encodeURIComponent((0, settings_1.buildSettings)()));
+        }, { enableHighAccuracy: false, timeout: 5000 });
     }
     catch (e) {
         console.error(e);
