@@ -138,25 +138,9 @@ var MapHandler = /** @class */ (function () {
     };
     MapHandler.prototype.updatePosition = function (pos) {
         var _a;
-        var lat = pos.coords.latitude;
-        var lng = pos.coords.longitude;
-        var bearing = (_a = pos.coords.heading) !== null && _a !== void 0 ? _a : undefined;
-        if (this.lastLat !== undefined && this.lastLng !== undefined) {
-            var dist = (0, routing_1.haversine)(this.lastLat, this.lastLng, lat, lng);
-            var bearingDiff = 0;
-            if (bearing !== undefined && this.lastBearing !== undefined) {
-                var diff = Math.abs(bearing - this.lastBearing);
-                bearingDiff = Math.min(diff, 360 - diff);
-            }
-            if (dist <= 3 && bearingDiff <= 5)
-                return;
-        }
         if (test_data_1.ENABLE_LOGS)
-            console.info('updatePosition', lat.toFixed(5), lng.toFixed(5), bearing !== null && bearing !== void 0 ? bearing : '-');
-        this.lastLat = lat;
-        this.lastLng = lng;
-        this.lastBearing = bearing;
-        this.mapState.next(__assign(__assign({}, this.mapState.value), { currentPos: { lat: lat, lng: lng }, bearing: bearing }));
+            console.info('updatePosition');
+        this.mapState.next(__assign(__assign({}, this.mapState.value), { currentPos: { lat: pos.coords.latitude, lng: pos.coords.longitude }, bearing: (_a = pos.coords.heading) !== null && _a !== void 0 ? _a : undefined }));
     };
     MapHandler.prototype.selectRoute = function (destination) {
         if (test_data_1.ENABLE_LOGS)

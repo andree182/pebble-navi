@@ -12,7 +12,7 @@ import {
 } from 'rxjs';
 import { MapState, renderForState, RenderOutput } from './server/stateRenderer';
 import { Destination } from './index';
-import { distanceToRoute, haversine, RouteResult } from './server/routing';
+import { distanceToRoute, RouteResult } from './server/routing';
 import {
   asciiNormalize,
   encodeAdaptive,
@@ -48,9 +48,6 @@ export class MapHandler {
   private isBw = false;
   private rotationMode = false;
   private isEmulator = false;
-  private lastLat: number | undefined = undefined;
-  private lastLng: number | undefined = undefined;
-  private lastBearing: number | undefined = undefined;
   private readonly mapState = new BehaviorSubject<PartialMapState>({});
   private userVerticalOffset: number | undefined = undefined;
 
@@ -182,30 +179,12 @@ export class MapHandler {
   }
 
   public updatePosition(pos: GeolocationPosition): void {
-    const lat = pos.coords.latitude;
-    const lng = pos.coords.longitude;
-    const bearing = pos.coords.heading ?? undefined;
+    if (ENABLE_LOGS) console.info('updatePosition');
 
-    if (this.lastLat !== undefined && this.lastLng !== undefined) {
-      const dist = haversine(this.lastLat, this.lastLng, lat, lng);
-      let bearingDiff = 0;
-      if (bearing !== undefined && this.lastBearing !== undefined) {
-        const diff = Math.abs(bearing - this.lastBearing);
-        bearingDiff = Math.min(diff, 360 - diff);
-      }
-      if (dist <= 3 && bearingDiff <= 5) return;
-    }
-
-    if (ENABLE_LOGS)
-      console.info('updatePosition', lat.toFixed(5), lng.toFixed(5), bearing ?? '-');
-
-    this.lastLat = lat;
-    this.lastLng = lng;
-    this.lastBearing = bearing;
     this.mapState.next({
       ...this.mapState.value,
-      currentPos: { lat, lng },
-      bearing,
+      currentPos: { lat: pos.coords.latitude, lng: pos.coords.longitude },
+      bearing: pos.coords.heading ?? undefined,
     });
   }
 
