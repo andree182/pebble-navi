@@ -353,6 +353,33 @@
         />
         <span id="brightness-val" style="min-width: 32px; text-align: right; font-weight: bold; color: #4fc3f7;">__BRIGHTNESS_VALUE__</span>
       </div>
+      <div class="section-title">Show destination hint</div>
+      <label
+        style="
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          padding: 8px;
+          background: #0f3460;
+          border-radius: 6px;
+          cursor: pointer;
+          margin: 8px 0;
+        "
+      >
+        <input type="checkbox" id="show-dest-hint" __SHOW_DEST_HINT_CHECKED__ /> Show "Select Destination" / "Add Destination" hints when no route is active
+      </label>
+      <div class="section-title">Minimum update time (0-300s)</div>
+      <div style="display: flex; align-items: center; gap: 12px; margin: 8px 0; padding: 8px; background: #0f3460; border-radius: 6px; box-sizing: border-box;">
+        <input
+          type="range"
+          id="min-update-time"
+          min="0"
+          max="300"
+          value="__MIN_UPDATE_TIME__"
+          oninput="document.getElementById('min-update-time-val').innerText = this.value + 's'"
+        />
+        <span id="min-update-time-val" style="min-width: 48px; text-align: right; font-weight: bold; color: #4fc3f7;">__MIN_UPDATE_TIME__s</span>
+      </div>
     </div>
     <button onclick="saveAndClose()">Save & Close</button>
     <div class="section-title">Attributions</div>
@@ -476,12 +503,16 @@
           var t = document.getElementById("telemetry").checked;
           var e = document.getElementById("experimental").checked;
           var b = parseInt(document.getElementById("brightness").value, 10);
+          var sdh = document.getElementById("show-dest-hint").checked;
+          var mut = parseInt(document.getElementById("min-update-time").value, 10);
           var payload = {
               destinations: dests,
               units: u ? u.value : "metric",
               telemetry_enabled: t,
               experimental_enabled: e,
-              brightness: isNaN(b) ? 40 : b
+              brightness: isNaN(b) ? 40 : b,
+              show_destination_hint: sdh,
+              minimum_update_time: isNaN(mut) ? 0 : mut
           };
           document.location = "pebblejs://close#" + encodeURIComponent(JSON.stringify(payload))
       }

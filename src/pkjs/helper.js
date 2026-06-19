@@ -10,6 +10,10 @@ exports.loadExperimentalEnabled = loadExperimentalEnabled;
 exports.saveExperimentalEnabled = saveExperimentalEnabled;
 exports.loadBrightness = loadBrightness;
 exports.saveBrightness = saveBrightness;
+exports.loadShowDestinationHint = loadShowDestinationHint;
+exports.saveShowDestinationHint = saveShowDestinationHint;
+exports.loadMinimumUpdateTime = loadMinimumUpdateTime;
+exports.saveMinimumUpdateTime = saveMinimumUpdateTime;
 exports.loadDestinations = loadDestinations;
 exports.saveDestinations = saveDestinations;
 exports.encodeLZSS = encodeLZSS;
@@ -23,6 +27,8 @@ var SETTINGS_KEY = 'nav_settings';
 var TELEMETRY_KEY = 'telemetry_enabled';
 var EXPERIMENTAL_KEY = 'experimental_enabled';
 var BRIGHTNESS_KEY = 'brightness_value';
+var SHOW_DESTINATION_HINT_KEY = 'show_destination_hint';
+var MINIMUM_UPDATE_TIME_KEY = 'minimum_update_time';
 function loadSettings() {
     try {
         var saved = localStorage.getItem(SETTINGS_KEY);
@@ -66,6 +72,26 @@ function loadBrightness() {
 }
 function saveBrightness(brightness) {
     localStorage.setItem(BRIGHTNESS_KEY, String(brightness));
+}
+function loadShowDestinationHint() {
+    var saved = localStorage.getItem(SHOW_DESTINATION_HINT_KEY);
+    return saved !== 'false';
+}
+function saveShowDestinationHint(enabled) {
+    localStorage.setItem(SHOW_DESTINATION_HINT_KEY, enabled ? 'true' : 'false');
+}
+function loadMinimumUpdateTime() {
+    var saved = localStorage.getItem(MINIMUM_UPDATE_TIME_KEY);
+    if (saved !== null) {
+        var parsed = parseInt(saved, 10);
+        if (!isNaN(parsed)) {
+            return parsed;
+        }
+    }
+    return 0;
+}
+function saveMinimumUpdateTime(time) {
+    localStorage.setItem(MINIMUM_UPDATE_TIME_KEY, String(time));
 }
 function loadDestinations() {
     try {

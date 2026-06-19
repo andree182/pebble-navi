@@ -62,6 +62,7 @@ static void inbox_received(DictionaryIterator* iter, void* ctx)
         s_route_summary_text = malloc(len);
         memcpy(s_route_summary_text, nav_line1->value->cstring, len);
         text_layer_set_text(s_route_summary_layer, s_route_summary_text);
+        layer_set_hidden(text_layer_get_layer(s_route_summary_layer), s_route_summary_text[0] == '\0');
     }
     Tuple* nav_line2 = dict_find(iter, MESSAGE_KEY_NAV_INFO_LINE2);
     if (nav_line2)
@@ -71,6 +72,7 @@ static void inbox_received(DictionaryIterator* iter, void* ctx)
         s_next_step_text = malloc(len);
         memcpy(s_next_step_text, nav_line2->value->cstring, len);
         text_layer_set_text(s_next_step_layer, s_next_step_text);
+        layer_set_hidden(text_layer_get_layer(s_next_step_layer), s_next_step_text[0] == '\0');
     }
 
     Tuple* route_active = dict_find(iter, MESSAGE_KEY_ROUTE_ACTIVE);
@@ -190,6 +192,7 @@ static void main_window_load(Window* window)
     text_layer_set_font(s_next_step_layer, fonts_get_system_font(FONT_KEY_GOTHIC_14_BOLD));
     text_layer_set_text_alignment(s_next_step_layer, GTextAlignmentCenter);
     layer_add_child(window_layer, text_layer_get_layer(s_next_step_layer));
+    layer_set_hidden(text_layer_get_layer(s_next_step_layer), true);
 
     s_route_summary_layer = text_layer_create(GRect(0, bounds.size.h - 18 - OFFSET, bounds.size.w, 18));
     text_layer_set_background_color(s_route_summary_layer, GColorBlack);
@@ -197,6 +200,7 @@ static void main_window_load(Window* window)
     text_layer_set_font(s_route_summary_layer, fonts_get_system_font(FONT_KEY_GOTHIC_14_BOLD));
     text_layer_set_text_alignment(s_route_summary_layer, GTextAlignmentCenter);
     layer_add_child(window_layer, text_layer_get_layer(s_route_summary_layer));
+    layer_set_hidden(text_layer_get_layer(s_route_summary_layer), true);
 
     window_set_click_config_provider(window, click_config_provider);
 
